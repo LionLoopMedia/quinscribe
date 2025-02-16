@@ -1,15 +1,32 @@
-# Ansh & Riley Full-Stack Template
+# QuinScribe
 
-This is a full-stack template project for Software Composers to create  applications with AI.
+AI-powered voice-to-text SOP creator for entrepreneurs
 
-## Getting started
-To create a new project, you go to `/paths`, choose from our list of Paths, and then use Cursor's Composer feature to quickly scaffold your project!
+## About
+QuinScribe is a powerful tool that helps entrepreneurs create Standard Operating Procedures (SOPs) using voice input. Simply speak your process steps, and QuinScribe will convert them into well-formatted, professional SOPs in markdown format.
 
-You can also edit the Path's prompt template to be whatever you like!
+## Features
+- Voice-to-text recording with pause/resume functionality
+- Automatic SOP formatting using Gemini AI
+- Markdown link support with clipboard integration
+- Keyboard shortcuts for efficient workflow
+- Clean, modern UI with real-time transcription display
 
-## Technologies used
-This doesn't really matter, but is useful for the AI to understand more about this project. We are using the following technologies
+## Technologies Used
 - React with Next.js 14 App Router
 - TailwindCSS
-- Firebase Auth, Storage, and Database
-- Multiple AI endpoints including OpenAI, Anthropic, and Replicate using Vercel's AI SDK
+- Google's Gemini AI
+- Web Speech API for voice recording
+- Framer Motion for animations
+
+## Getting Started
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Get your Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+4. Run the development server: `npm run dev`
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Keyboard Shortcuts
+- Alt + P: Start/Pause Recording
+- Alt + O: Insert Link from Clipboard
+- Alt + S: Submit Recording
