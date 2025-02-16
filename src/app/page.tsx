@@ -1,46 +1,234 @@
-import Link from "next/link";
+'use client';
+
+import { useState, useEffect } from 'react';
+import VoiceRecorder from '@/components/VoiceRecorder';
+import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle } from 'react-icons/fa';
 
 export default function Home() {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [sopNotes, setSopNotes] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState('');
+
+  // Clear API key when component unmounts or page is about to unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      setApiKey('');
+      setIsApiKeyValid(false);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      handleBeforeUnload();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Prevent browser's password manager from saving the API key
+  useEffect(() => {
+    const input = document.querySelector('input[type="password"]');
+    if (input) {
+      input.setAttribute('autocomplete', 'off');
+      input.setAttribute('data-lpignore', 'true');
+    }
+  }, []);
+
+  const validateApiKey = async () => {
+    if (!apiKey.trim()) {
+      setApiKeyError('Please enter an API key');
+      setIsApiKeyValid(false);
+      return;
+    }
+
+    setIsValidating(true);
+    setApiKeyError('');
+
+    try {
+      // Test the API key with a simple prompt
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey,
+        },
+        body: JSON.stringify({ text: 'Test API key.' }),
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setIsApiKeyValid(true);
+      setApiKeyError('');
+    } catch (error) {
+      console.error('API Key validation error:', error);
+      setApiKeyError('Invalid API key. Please check your key and try again.');
+      setIsApiKeyValid(false);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleTranscriptionComplete = async (text: string) => {
+    if (!apiKey) {
+      setApiKeyError('Please enter your Gemini API key first');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey,
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setSopNotes(data.content);
+      setIsCopied(false);
+    } catch (error) {
+      console.error('Error processing text:', error);
+      setApiKeyError('Failed to process the text. Please check your API key and try again.');
+      setIsApiKeyValid(false);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const key = e.target.value;
+    setApiKey(key);
+    setApiKeyError('');
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(sopNotes);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      alert('Failed to copy text to clipboard');
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-8">
-      <div>
-        <h2 className="text-2xl font-semibold text-center border p-4 font-mono rounded-md">
-          Get started by choosing a template path from the /paths/ folder.
-        </h2>
-      </div>
-      <div>
-        <h1 className="text-6xl font-bold text-center">Make anything you imagine 🪄</h1>
-        <h2 className="text-2xl text-center font-light text-gray-500 pt-4">
-          This whole page will be replaced when you run your template path.
-        </h2>
-      </div>
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">AI Chat App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            An intelligent conversational app powered by AI models, featuring real-time responses
-            and seamless integration with Next.js and various AI providers.
-          </p>
+    <main className="min-h-screen p-8 bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">Voice to SOP Notes</h1>
+        
+        <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <FaKey className="text-gray-500" />
+            <h2 className="text-lg font-semibold text-gray-800">Gemini API Key</h2>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={apiKey}
+              onChange={handleApiKeyChange}
+              placeholder="Enter your Gemini API key"
+              className={`flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black ${
+                apiKeyError ? 'border-red-500' : ''
+              }`}
+              autoComplete="off"
+              data-lpignore="true"
+            />
+            <button
+              onClick={validateApiKey}
+              disabled={isValidating || !apiKey.trim()}
+              className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+                isValidating
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : isApiKeyValid
+                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
+            >
+              {isValidating ? (
+                <>
+                  <FaSpinner className="w-4 h-4 animate-spin" />
+                  <span>Validating...</span>
+                </>
+              ) : isApiKeyValid ? (
+                <>
+                  <FaCheck className="w-4 h-4" />
+                  <span>Verified</span>
+                </>
+              ) : (
+                'Verify API Key'
+              )}
+            </button>
+          </div>
+          {apiKeyError && (
+            <div className="mt-2 text-red-500 text-sm flex items-center gap-2">
+              <FaExclamationCircle className="w-4 h-4" />
+              <span>{apiKeyError}</span>
+            </div>
+          )}
+          <p className="mt-1 text-xs text-gray-400">Note: Your API key will be cleared when you refresh or close the page.</p>
         </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">AI Image Generation App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Create images from text prompts using AI, powered by the Replicate API and Next.js.
-          </p>
+
+        <div className="mb-8">
+          <VoiceRecorder 
+            onTranscriptionComplete={handleTranscriptionComplete}
+            isDisabled={!isApiKeyValid}
+          />
         </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">Social Media App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            A feature-rich social platform with user profiles, posts, and interactions using
-            Firebase and Next.js.
-          </p>
-        </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">Voice Notes App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            A voice-based note-taking app with real-time transcription using Deepgram API, 
-            Firebase integration for storage, and a clean, simple interface built with Next.js.
-          </p>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          {isProcessing ? (
+            <div className="flex items-center justify-center py-8">
+              <FaSpinner className="w-8 h-8 animate-spin text-blue-500" />
+              <span className="ml-3 text-gray-600">Processing your recording...</span>
+            </div>
+          ) : sopNotes ? (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">Generated SOP</h2>
+                <button
+                  onClick={handleCopy}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
+                    isCopied
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                  title="Copy to clipboard"
+                >
+                  {isCopied ? (
+                    <>
+                      <FaCheck className="w-4 h-4" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaCopy className="w-4 h-4" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <pre className="whitespace-pre-wrap text-black font-mono text-sm p-4 bg-gray-50 rounded-md">
+                {sopNotes}
+              </pre>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">
+              Your SOP notes will appear here after recording
+            </p>
+          )}
         </div>
       </div>
     </main>
