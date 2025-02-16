@@ -10,7 +10,6 @@ There are some pre-configured APIs in this template that can be used but only if
 - Firebase
   - In src/lib/firebase there is a firebase.ts configuration file as well as firebaseUtils.ts for various utility functions when interacting with Firebase Database, Storage, and Authencation
   - In src/lib/contexts there is an AuthContext.tsx file that has user authentication with Firebase set up with the onAuthStateChanged listener.
-  - In src/lib/hooks there is a useAuth.ts hook
 - OpenAI 
   - src/app/api/openai has chat/route.ts which is a simple API calling streamText from openai using the Vercel AI library
 - Anthropic
