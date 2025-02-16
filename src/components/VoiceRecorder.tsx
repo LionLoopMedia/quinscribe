@@ -85,7 +85,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       try {
         const clipboardText = await navigator.clipboard.readText();
         if (clipboardText.trim() && isValidUrl(clipboardText)) {
-          setFinalTranscript(prev => prev + `[${clipboardText}](${clipboardText}) `);
+          setFinalTranscript(prev => prev + ` (${clipboardText}) `);
         } else {
           alert('Please copy a valid URL to your clipboard first');
         }

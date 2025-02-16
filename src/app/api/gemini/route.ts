@@ -19,23 +19,21 @@ export async function POST(req: Request) {
     
     const prompt = `You are an expert SOP Creator, specializing in generating detailed Standard Operating Procedures (SOPs) in Markdown format for digital marketing and online entrepreneurship tasks.
 
-Task: Create a detailed SOP in Markdown format from the following voice input, which contains steps outlining a process.
+Task: Create a detailed SOP in Markdown format from the following voice input, which contains steps outlining a process. Any URLs in parentheses MUST be included in the output.
 
 Formatting Rules:
 1. Structure (CRITICAL - NO EXCEPTIONS):
    - ONLY use H2 (##) for major steps - NEVER use H3 or deeper headers
-   - Use bullet points (-) for substeps
    - Use nested bullets (indented -) for any further details or sub-substeps
-   - All hierarchical information should be represented through bullet point nesting, not header levels
 2. Link Handling (CRITICAL - NO EXCEPTIONS):
-   - ONLY use markdown links that are present in the input text - NEVER add new links
-   - NEVER create or suggest additional links that weren't in the original input
-   - Try to integrate the input's existing links naturally into the relevant step first
-   - If an input link can be naturally placed, use descriptive anchor text while keeping the original link (e.g., "Configure settings in [the admin panel](original-link-from-input)")
-   - If an input link cannot be naturally integrated into the step, it MUST be appended at the end of that step in parentheses with "(See more: [Additional Resource](original-link-from-input))"
-   - Every markdown link from the input MUST appear somewhere in the output, either integrated or appended
-   - Links should be placed with their relevant step, not at the end of the entire document
-   - The only markdown links in the output should be those that were present in the input
+   - EVERY URL in parentheses MUST appear in the output - NO EXCEPTIONS
+   - First try to integrate URLs naturally into the text as markdown links
+   - Example: "Check analytics (https://analytics.google.com)" becomes "Check [Google Analytics](https://analytics.google.com)"
+   - If a URL cannot be integrated naturally, append it at the end of its relevant step as "(See: [Resource](url))"
+   - Never omit any URLs, even if they seem redundant or unnecessary
+   - Every step that had a URL in the input must either:
+     a) Include the URL as a natural inline link, OR
+     b) Have the URL appended at the end as "(See: [Resource](url))"
 3. Content Guidelines:
    - Convert all bullet points into clear, actionable instructions
    - Put file names, variables, and commands in \`code\` format
@@ -46,11 +44,9 @@ Here is the voice input to convert into an SOP:
 ${text}
 
 Remember:
-- ONLY use H2 (##) for headings, never deeper levels
-- Use nested bullet points for all hierarchical information
-- ONLY use markdown links from the input - never add new ones
-- EVERY markdown link from the input must be included - either naturally in the text or appended to its relevant step
-- Keep the original markdown link format and URLs exactly as they appear in the input`;
+- EVERY single URL from the input MUST appear in the output
+- If you can't integrate a URL naturally, append it as "(See: [Resource](url))"
+- Never discard or omit any URLs from the input`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
