@@ -23,7 +23,7 @@ Task: Create a detailed SOP in Markdown format from the following voice input, w
 
 Formatting Rules:
 1. Structure (CRITICAL - NO EXCEPTIONS):
-   - ONLY use H2 (##) for major steps - NEVER use H3 or deeper headers
+   - ONLY use H2 (##) for major steps - NEVER use H3 (###) or deeper headings.
    - Use nested bullets (indented -) for any further details or sub-substeps
    - ALWAYS indent code blocks and markdown content with 4 spaces under their respective steps
    - When including code examples or markdown content:
