@@ -53,6 +53,7 @@ Formatting Rules:
    - Every step that had a URL in the input must either:
      a) Include the URL as a natural inline markdown link with descriptive anchor text, OR
      b) Have the URL appended at the end as "(See: [Descriptive Name](url))"
+   - Don't make up your own URLs, only use the ones provided in the input.
 3. Content Guidelines:
    - Convert all bullet points into clear, actionable instructions
    - Put file names, variables, and commands in \`code\` format
