@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { FaMicrophone, FaPause, FaStop, FaPaperPlane, FaLink, FaKeyboard } from 'react-icons/fa';
+import { FaMicrophone, FaPause, FaStop, FaPaperPlane, FaLink, FaKeyboard, FaMarkdown } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 interface VoiceRecorderProps {
@@ -95,6 +95,25 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
     }
   }, [isDisabled]);
 
+  const handleAddMarkdown = useCallback(async () => {
+    if (!isDisabled) {
+      try {
+        const clipboardText = await navigator.clipboard.readText();
+        if (clipboardText.trim()) {
+          const indentedMarkdown = clipboardText
+            .split('\n')
+            .map(line => `    ${line}`)
+            .join('\n');
+          setFinalTranscript(prev => prev + `\n\n${indentedMarkdown}\n\n`);
+        } else {
+          alert('Please copy some markdown content to your clipboard first');
+        }
+      } catch (error) {
+        alert('Unable to read clipboard. Please make sure you have content copied.');
+      }
+    }
+  }, [isDisabled]);
+
   const isValidUrl = (string: string) => {
     try {
       new URL(string);
@@ -119,6 +138,9 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         } else if (event.code === 'KeyO') {
           event.preventDefault();
           handleAddLink();
+        } else if (event.code === 'KeyI') {
+          event.preventDefault();
+          handleAddMarkdown();
         } else if (event.code === 'KeyS') {
           event.preventDefault();
           if (!isDisabled && (isRecording || isPaused || finalTranscript)) {
@@ -130,7 +152,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isRecording, isPaused, startRecording, pauseRecording, resumeRecording, handleAddLink, stopAndSubmit, isDisabled, finalTranscript]);
+  }, [isRecording, isPaused, startRecording, pauseRecording, resumeRecording, handleAddLink, handleAddMarkdown, stopAndSubmit, isDisabled, finalTranscript]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -185,6 +207,21 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
               <FaLink className="w-6 h-6 text-white" />
             </button>
             <span className="text-sm font-medium text-gray-700">Add Link</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={handleAddMarkdown}
+              disabled={isDisabled}
+              className={`p-4 rounded-full transition-all ${
+                isDisabled
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-indigo-500 hover:bg-indigo-600'
+              }`}
+            >
+              <FaMarkdown className="w-6 h-6 text-white" />
+            </button>
+            <span className="text-sm font-medium text-gray-700">Add Markdown</span>
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -244,6 +281,10 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
           <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
             <span className="font-medium text-gray-700">Insert Link from Clipboard</span>
             <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + O</kbd>
+          </div>
+          <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+            <span className="font-medium text-gray-700">Insert Markdown from Clipboard</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + I</kbd>
           </div>
           <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
             <span className="font-medium text-gray-700">Submit Recording</span>
