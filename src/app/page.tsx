@@ -13,9 +13,20 @@ export default function Home() {
   const [isValidating, setIsValidating] = useState(false);
   const [apiKeyError, setApiKeyError] = useState('');
 
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('geminiApiKey');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      // Validate the saved API key
+      validateApiKey(savedApiKey);
+    }
+  }, []);
+
   // Clear API key when component unmounts or page is about to unload
   useEffect(() => {
     const handleBeforeUnload = () => {
+      // Don't clear from localStorage on page unload anymore
       setApiKey('');
       setIsApiKeyValid(false);
     };
@@ -37,8 +48,15 @@ export default function Home() {
     }
   }, []);
 
-  const validateApiKey = async () => {
-    if (!apiKey.trim()) {
+  const clearApiKey = () => {
+    localStorage.removeItem('geminiApiKey');
+    setApiKey('');
+    setIsApiKeyValid(false);
+    setApiKeyError('');
+  };
+
+  const validateApiKey = async (keyToValidate = apiKey) => {
+    if (!keyToValidate.trim()) {
       setApiKeyError('Please enter an API key');
       setIsApiKeyValid(false);
       return;
@@ -53,7 +71,7 @@ export default function Home() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
+          'X-API-Key': keyToValidate,
         },
         body: JSON.stringify({ text: 'Test API key.' }),
       });
@@ -66,10 +84,13 @@ export default function Home() {
 
       setIsApiKeyValid(true);
       setApiKeyError('');
+      // Save valid API key to localStorage
+      localStorage.setItem('geminiApiKey', keyToValidate);
     } catch (error) {
       console.error('API Key validation error:', error);
       setApiKeyError('Invalid API key. Please check your key and try again.');
       setIsApiKeyValid(false);
+      localStorage.removeItem('geminiApiKey');
     } finally {
       setIsValidating(false);
     }
@@ -147,7 +168,7 @@ export default function Home() {
               data-lpignore="true"
             />
             <button
-              onClick={validateApiKey}
+              onClick={() => validateApiKey()}
               disabled={isValidating || !apiKey.trim()}
               className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
                 isValidating
@@ -171,6 +192,15 @@ export default function Home() {
                 'Verify API Key'
               )}
             </button>
+            {isApiKeyValid && (
+              <button
+                onClick={clearApiKey}
+                className="px-4 py-2 rounded-md bg-red-500 hover:bg-red-600 text-white transition-all"
+                title="Clear saved API key"
+              >
+                Clear
+              </button>
+            )}
           </div>
           {apiKeyError && (
             <div className="mt-2 text-red-500 text-sm flex items-center gap-2">
@@ -178,7 +208,11 @@ export default function Home() {
               <span>{apiKeyError}</span>
             </div>
           )}
-          <p className="mt-1 text-xs text-gray-400">Note: Your API key will be cleared when you refresh or close the page.</p>
+          <p className="mt-1 text-xs text-gray-400">
+            {isApiKeyValid 
+              ? "Your API key is securely saved in your browser. Click 'Clear' to remove it."
+              : "Your API key will be securely saved in your browser until you clear it."}
+          </p>
         </div>
 
         <div className="mb-8">
