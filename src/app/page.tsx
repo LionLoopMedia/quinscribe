@@ -12,6 +12,7 @@ export default function Home() {
   const [isCopied, setIsCopied] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [apiKeyError, setApiKeyError] = useState('');
+  const [isApiSectionOpen, setIsApiSectionOpen] = useState(false);
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -146,73 +147,115 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-sky-50 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Voice to SOP Notes</h1>
         
-        <div className="mb-8 p-6 bg-white rounded-xl shadow-xl border border-blue-100">
-          <div className="flex items-center gap-2 mb-3">
-            <FaKey className="text-blue-500" />
-            <h2 className="text-xl font-semibold text-gray-800">Gemini API Key</h2>
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              placeholder="Enter your Gemini API key"
-              className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 ${
-                apiKeyError ? 'border-red-500' : 'border-gray-200'
-              } transition-all duration-200`}
-              autoComplete="off"
-              data-lpignore="true"
-            />
-            <button
-              onClick={() => validateApiKey()}
-              disabled={isValidating || !apiKey.trim()}
-              className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
-                isValidating
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : isApiKeyValid
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg'
-              }`}
-            >
-              {isValidating ? (
-                <>
-                  <FaSpinner className="w-4 h-4 animate-spin" />
-                  <span>Validating...</span>
-                </>
-              ) : isApiKeyValid ? (
-                <>
-                  <FaCheck className="w-4 h-4" />
-                  <span>Verified</span>
-                </>
-              ) : (
-                'Verify API Key'
+        {/* API Key Accordion */}
+        <div className="mb-8 bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100">
+          <button 
+            onClick={() => setIsApiSectionOpen(!isApiSectionOpen)}
+            className="w-full flex items-center justify-between p-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition-all duration-200"
+          >
+            <div className="flex items-center gap-2">
+              <FaKey className="text-blue-500" />
+              <h2 className="text-xl font-semibold text-gray-800">Gemini API Key</h2>
+              {isApiKeyValid && (
+                <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  Verified
+                </span>
               )}
-            </button>
-            {isApiKeyValid && (
-              <button
-                onClick={clearApiKey}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white transition-all duration-300 shadow-md hover:shadow-lg font-medium"
-                title="Clear saved API key"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {apiKeyError && (
-            <div className="mt-2 text-red-500 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg">
-              <FaExclamationCircle className="w-4 h-4" />
-              <span>{apiKeyError}</span>
             </div>
-          )}
-          <p className="mt-2 text-xs text-gray-500">
-            {isApiKeyValid 
-              ? "Your API key is securely saved in your browser. Click 'Clear' to remove it."
-              : "Your API key will be securely saved in your browser until you clear it."}
-          </p>
+            <svg 
+              className={`w-5 h-5 text-gray-500 transform transition-transform duration-200 ${isApiSectionOpen ? 'rotate-180' : ''}`} 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {/* Collapsible section */}
+          <div 
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              isApiSectionOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="p-4 border-t border-blue-50">
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={handleApiKeyChange}
+                  placeholder="Enter your Gemini API key"
+                  className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 ${
+                    apiKeyError ? 'border-red-500' : 'border-gray-200'
+                  } transition-all duration-200`}
+                  autoComplete="off"
+                  data-lpignore="true"
+                />
+                <button
+                  onClick={() => validateApiKey()}
+                  disabled={isValidating || !apiKey.trim()}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
+                    isValidating
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : isApiKeyValid
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {isValidating ? (
+                    <>
+                      <FaSpinner className="w-4 h-4 animate-spin" />
+                      <span>Validating...</span>
+                    </>
+                  ) : isApiKeyValid ? (
+                    <>
+                      <FaCheck className="w-4 h-4" />
+                      <span>Verified</span>
+                    </>
+                  ) : (
+                    'Verify API Key'
+                  )}
+                </button>
+                {isApiKeyValid && (
+                  <button
+                    onClick={clearApiKey}
+                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white transition-all duration-300 shadow-md hover:shadow-lg font-medium"
+                    title="Clear saved API key"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {apiKeyError && (
+                <div className="mt-2 text-red-500 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg">
+                  <FaExclamationCircle className="w-4 h-4" />
+                  <span>{apiKeyError}</span>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-gray-500">
+                {isApiKeyValid 
+                  ? "Your API key is securely saved in your browser. Click 'Clear' to remove it."
+                  : "Your API key will be securely saved in your browser until you clear it."}
+              </p>
+              <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+                <a
+                  href="https://makersuite.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  Get a Gemini API key
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mb-8">

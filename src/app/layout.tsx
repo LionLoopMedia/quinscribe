@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-[url('/subtle-pattern.png')] bg-repeat`}>
+      <body className={`${inter.className} min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50`}>
         <Navbar />
         <div className="pt-16 pb-16">
           {children}
