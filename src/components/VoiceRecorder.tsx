@@ -17,6 +17,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   const [finalTranscript, setFinalTranscript] = useState('');
   const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const resultsRef = useRef<{ [key: number]: SpeechRecognitionResult }>({});
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -53,19 +54,29 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
 
         recognition.onresult = (event: SpeechRecognitionEvent) => {
           let interimText = '';
-          let finalText = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) {
-              finalText += result[0].transcript + ' ';
-            } else {
-              interimText += result[0].transcript;
-            }
+          let finalText = finalTranscript;
+          let hasNewFinal = false;
+
+          // Store all results
+          for (let i = 0; i < event.results.length; i++) {
+            resultsRef.current[i] = event.results[i];
           }
 
-          if (finalText) {
-            setFinalTranscript(prev => prev + finalText);
+          // Process all results in order
+          Object.values(resultsRef.current).forEach((result) => {
+            if (result.isFinal) {
+              const transcript = result[0].transcript;
+              if (!finalText.includes(transcript)) {
+                finalText += transcript + ' ';
+                hasNewFinal = true;
+              }
+            } else {
+              interimText = result[0].transcript;
+            }
+          });
+
+          if (hasNewFinal) {
+            setFinalTranscript(finalText);
           }
           setInterimTranscript(interimText);
         };
@@ -74,11 +85,12 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         recognitionRef.current = recognition;
       }
     }
-  }, []);
+  }, [finalTranscript]);
 
   const startRecording = useCallback(() => {
     if (recognition && !isDisabled) {
       setFinalTranscript(''); // Clear previous transcript when starting new recording
+      resultsRef.current = {}; // Clear stored results
       
       try {
         recognition.start();
@@ -119,19 +131,21 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       setIsPaused(false);
       
       // Submit the final transcript
-      if (finalTranscript.trim()) {
-        onTranscriptionComplete(finalTranscript.trim());
+      const completeTranscript = (finalTranscript + ' ' + interimTranscript).trim();
+      if (completeTranscript) {
+        onTranscriptionComplete(completeTranscript);
       }
       
       // Reset states
       setFinalTranscript('');
       setInterimTranscript('');
+      resultsRef.current = {};
       
       if (transcriptTimeoutRef.current) {
         clearTimeout(transcriptTimeoutRef.current);
       }
     }
-  }, [recognition, finalTranscript, onTranscriptionComplete]);
+  }, [recognition, finalTranscript, interimTranscript, onTranscriptionComplete]);
 
   useEffect(() => {
     return () => {
