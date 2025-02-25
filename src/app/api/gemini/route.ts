@@ -12,12 +12,28 @@ export async function POST(req: Request) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const { text } = await req.json();
+    // Basic validation for Gemini API key format
+    if (!apiKey.startsWith('AI')) {
+      return NextResponse.json(
+        { error: 'Invalid API key format. Gemini API keys should start with "AI"' },
+        { status: 400 }
+      );
+    }
+
+    const { text } = await req.json().catch(() => ({}));
     
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    
-    const prompt = `You are an expert SOP Creator, specializing in generating detailed Standard Operating Procedures (SOPs) in Markdown format for digital marketing and online entrepreneurship tasks.
+    if (!text) {
+      return NextResponse.json(
+        { error: 'Text input is required' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      
+      const prompt = `You are an expert SOP Creator, specializing in generating detailed Standard Operating Procedures (SOPs) in Markdown format for digital marketing and online entrepreneurship tasks.
 
 Task: Create a detailed SOP in Markdown format from the following voice input, which contains steps outlining a process. Any URLs in parentheses MUST be included in the output.
 
@@ -83,15 +99,33 @@ Remember:
 - CRITICAL: All code blocks, command examples, and markdown content MUST be indented with 4 spaces under their steps
 - Always add blank lines before and after indented content`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const formattedResponse = response.text();
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const formattedResponse = response.text();
 
-    return NextResponse.json({ content: formattedResponse });
-  } catch (error) {
-    console.error('Error processing Gemini request:', error);
+      return NextResponse.json({ content: formattedResponse });
+    } catch (error: any) {
+      console.error('Error with Gemini API:', error);
+      
+      // Check for specific Gemini API errors
+      const errorMessage = error.message || 'Failed to process with Gemini API';
+      
+      if (errorMessage.includes('API key not valid')) {
+        return NextResponse.json(
+          { error: 'Invalid API key. Please check your Gemini API key.' },
+          { status: 401 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('Error processing request:', error);
     return NextResponse.json(
-      { error: 'Failed to process the text' },
+      { error: error.message || 'Failed to process the request' },
       { status: 500 }
     );
   }

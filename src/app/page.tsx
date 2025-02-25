@@ -67,6 +67,11 @@ export default function Home() {
     setApiKeyError('');
 
     try {
+      // Check if the API key starts with "AI" (Gemini API keys typically start with this)
+      if (!keyToValidate.startsWith('AI')) {
+        throw new Error('API key should start with "AI"');
+      }
+
       // Test the API key with a simple prompt
       const response = await fetch('/api/gemini', {
         method: 'POST',
@@ -76,6 +81,13 @@ export default function Home() {
         },
         body: JSON.stringify({ text: 'Test API key.' }),
       });
+
+      // Check if the response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API response not OK:', response.status, errorText);
+        throw new Error(`API error: ${response.status}`);
+      }
 
       const data = await response.json();
       
@@ -87,15 +99,22 @@ export default function Home() {
       setApiKeyError('');
       // Save valid API key to localStorage
       localStorage.setItem('geminiApiKey', keyToValidate);
-    } catch (error) {
+    } catch (error: any) {
       console.error('API Key validation error:', error);
-      setApiKeyError('Invalid API key. Please check your key and try again.');
+      setApiKeyError(error.message || 'Invalid API key. Please check your key and try again.');
       setIsApiKeyValid(false);
       localStorage.removeItem('geminiApiKey');
     } finally {
       setIsValidating(false);
     }
   };
+
+  // Function to force open API section if there's an error or no valid key
+  useEffect(() => {
+    if (apiKeyError || !isApiKeyValid) {
+      setIsApiSectionOpen(true);
+    }
+  }, [apiKeyError, isApiKeyValid]);
 
   const handleTranscriptionComplete = async (text: string) => {
     if (!apiKey) {
@@ -133,7 +152,7 @@ export default function Home() {
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const key = e.target.value;
     setApiKey(key);
-    setApiKeyError('');
+    if (apiKeyError) setApiKeyError('');
   };
 
   const handleCopy = async () => {
@@ -203,7 +222,7 @@ export default function Home() {
                       ? 'bg-gray-300 cursor-not-allowed'
                       : isApiKeyValid
                       ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg'
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
                   }`}
                 >
                   {isValidating ? (
@@ -223,7 +242,7 @@ export default function Home() {
                 {isApiKeyValid && (
                   <button
                     onClick={clearApiKey}
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white transition-all duration-300 shadow-md hover:shadow-lg font-medium"
+                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-300 shadow-md hover:shadow-lg font-medium"
                     title="Clear saved API key"
                   >
                     Clear
