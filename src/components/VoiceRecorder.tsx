@@ -51,46 +51,35 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
           }
         };
 
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interimText = '';
+          let finalText = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              finalText += result[0].transcript + ' ';
+            } else {
+              interimText += result[0].transcript;
+            }
+          }
+
+          if (finalText) {
+            setFinalTranscript(prev => prev + finalText);
+          }
+          setInterimTranscript(interimText);
+        };
+
         setRecognition(recognition);
         recognitionRef.current = recognition;
       }
     }
-  }, [isRecording, isPaused]);
-
-  const updateTranscript = useCallback((results: SpeechRecognitionResultList) => {
-    let interimText = '';
-    let finalText = finalTranscript;
-
-    // Process only the new results starting from resultIndex
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      if (result.isFinal) {
-        finalText += result[0].transcript + ' ';
-      } else {
-        interimText = result[0].transcript;
-      }
-    }
-
-    setFinalTranscript(finalText);
-    setInterimTranscript(interimText);
-
-    if (transcriptTimeoutRef.current) {
-      clearTimeout(transcriptTimeoutRef.current);
-    }
-
-    transcriptTimeoutRef.current = setTimeout(() => {
-      setInterimTranscript('');
-    }, 1500);
-  }, [finalTranscript]);
+  }, []);
 
   const startRecording = useCallback(() => {
     if (recognition && !isDisabled) {
       setFinalTranscript(''); // Clear previous transcript when starting new recording
       
-      recognition.onresult = (event) => {
-        updateTranscript(event.results);
-      };
-
       try {
         recognition.start();
         setIsRecording(true);
@@ -100,7 +89,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         setInterimTranscript('Error starting recording. Please try again.');
       }
     }
-  }, [recognition, isDisabled, updateTranscript]);
+  }, [recognition, isDisabled]);
 
   const pauseRecording = useCallback(() => {
     if (recognition && isRecording) {
@@ -160,7 +149,15 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       try {
         const clipboardText = await navigator.clipboard.readText();
         if (clipboardText.trim() && isValidUrl(clipboardText)) {
-          setFinalTranscript(prev => prev + ` (${clipboardText}) `);
+          setFinalTranscript(prev => {
+            const newText = prev + ` (${clipboardText}) `;
+            // If recording is active, we want to keep the current state
+            if (!isRecording && !isPaused) {
+              onTranscriptionComplete(newText.trim());
+              return '';
+            }
+            return newText;
+          });
         } else {
           alert('Please copy a valid URL to your clipboard first');
         }
@@ -168,7 +165,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         alert('Unable to read clipboard. Please make sure you have a valid URL copied.');
       }
     }
-  }, [isDisabled]);
+  }, [isDisabled, isRecording, isPaused, onTranscriptionComplete]);
 
   const handleAddMarkdown = useCallback(async () => {
     if (!isDisabled) {
@@ -179,7 +176,15 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
             .split('\n')
             .map(line => `    ${line}`)
             .join('\n');
-          setFinalTranscript(prev => prev + `\n\n${indentedMarkdown}\n\n`);
+          setFinalTranscript(prev => {
+            const newText = prev + `\n\n${indentedMarkdown}\n\n`;
+            // If recording is active, we want to keep the current state
+            if (!isRecording && !isPaused) {
+              onTranscriptionComplete(newText.trim());
+              return '';
+            }
+            return newText;
+          });
         } else {
           alert('Please copy some markdown content to your clipboard first');
         }
@@ -187,7 +192,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         alert('Unable to read clipboard. Please make sure you have content copied.');
       }
     }
-  }, [isDisabled]);
+  }, [isDisabled, isRecording, isPaused, onTranscriptionComplete]);
 
   const isValidUrl = (string: string) => {
     try {
