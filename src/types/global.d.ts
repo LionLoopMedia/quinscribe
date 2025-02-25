@@ -8,6 +8,11 @@ interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
 }
 
+interface SpeechRecognitionErrorEvent extends Event {
+  error: 'no-speech' | 'audio-capture' | 'not-allowed' | 'network' | 'aborted' | 'language-not-supported' | 'service-not-allowed' | 'bad-grammar';
+  message: string;
+}
+
 interface SpeechRecognitionResultList {
   length: number;
   item(index: number): SpeechRecognitionResult;
@@ -34,7 +39,7 @@ declare class SpeechRecognition extends EventTarget {
   onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
   onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
   onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
   onnomatch: ((this: SpeechRecognition, ev: Event) => any) | null;
   onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
   onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;

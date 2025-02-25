@@ -28,7 +28,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         recognition.maxAlternatives = 1;
         recognition.lang = 'en-US';
 
-        recognition.onerror = (event) => {
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error('Speech recognition error:', event.error);
           if (event.error === 'no-speech') {
             setInterimTranscript('No speech detected. Please try again.');
