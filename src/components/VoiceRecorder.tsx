@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FaMicrophone, FaPause, FaStop, FaPaperPlane, FaLink, FaKeyboard, FaMarkdown } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -15,6 +15,8 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [finalTranscript, setFinalTranscript] = useState('');
+  const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -23,33 +25,82 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.lang = 'en-US';
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          if (event.error === 'no-speech') {
+            setInterimTranscript('No speech detected. Please try again.');
+          } else if (event.error === 'audio-capture') {
+            setInterimTranscript('No microphone detected. Please check your settings.');
+          } else if (event.error === 'not-allowed') {
+            setInterimTranscript('Microphone access denied. Please allow microphone access.');
+          }
+          setIsRecording(false);
+          setIsPaused(false);
+        };
+
+        recognition.onend = () => {
+          if (isRecording && !isPaused) {
+            try {
+              recognition.start();
+            } catch (error) {
+              console.error('Error restarting recognition:', error);
+            }
+          }
+        };
+
         setRecognition(recognition);
+        recognitionRef.current = recognition;
       }
     }
-  }, []);
+  }, [isRecording, isPaused]);
+
+  const updateTranscript = useCallback((results: SpeechRecognitionResultList) => {
+    let interimText = '';
+    let finalText = finalTranscript;
+
+    // Process only the new results starting from resultIndex
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.isFinal) {
+        finalText += result[0].transcript + ' ';
+      } else {
+        interimText = result[0].transcript;
+      }
+    }
+
+    setFinalTranscript(finalText);
+    setInterimTranscript(interimText);
+
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+    }
+
+    transcriptTimeoutRef.current = setTimeout(() => {
+      setInterimTranscript('');
+    }, 1500);
+  }, [finalTranscript]);
 
   const startRecording = useCallback(() => {
     if (recognition && !isDisabled) {
+      setFinalTranscript(''); // Clear previous transcript when starting new recording
+      
       recognition.onresult = (event) => {
-        let currentInterim = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            setFinalTranscript(prev => prev + transcript + ' ');
-          } else {
-            currentInterim += transcript;
-          }
-        }
-        
-        setInterimTranscript(currentInterim);
+        updateTranscript(event.results);
       };
 
-      recognition.start();
-      setIsRecording(true);
-      setIsPaused(false);
+      try {
+        recognition.start();
+        setIsRecording(true);
+        setIsPaused(false);
+      } catch (error) {
+        console.error('Error starting recognition:', error);
+        setInterimTranscript('Error starting recording. Please try again.');
+      }
     }
-  }, [recognition, isDisabled]);
+  }, [recognition, isDisabled, updateTranscript]);
 
   const pauseRecording = useCallback(() => {
     if (recognition && isRecording) {
@@ -61,9 +112,14 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
 
   const resumeRecording = useCallback(() => {
     if (recognition && isPaused) {
-      recognition.start();
-      setIsPaused(false);
-      setIsRecording(true);
+      try {
+        recognition.start();
+        setIsPaused(false);
+        setIsRecording(true);
+      } catch (error) {
+        console.error('Error resuming recognition:', error);
+        setInterimTranscript('Error resuming recording. Please try again.');
+      }
     }
   }, [recognition, isPaused]);
 
@@ -72,13 +128,32 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       recognition.stop();
       setIsRecording(false);
       setIsPaused(false);
+      
+      // Submit the final transcript
       if (finalTranscript.trim()) {
         onTranscriptionComplete(finalTranscript.trim());
       }
+      
+      // Reset states
       setFinalTranscript('');
       setInterimTranscript('');
+      
+      if (transcriptTimeoutRef.current) {
+        clearTimeout(transcriptTimeoutRef.current);
+      }
     }
   }, [recognition, finalTranscript, onTranscriptionComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (transcriptTimeoutRef.current) {
+        clearTimeout(transcriptTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleAddLink = useCallback(async () => {
     if (!isDisabled) {
@@ -156,7 +231,6 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-      {/* Left Column - Buttons */}
       <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
         <div className="flex items-center justify-center gap-4 md:gap-6">
           <div className="flex flex-col items-center gap-1">
@@ -240,7 +314,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
           </div>
         </div>
 
-        {(isRecording || isPaused) && (finalTranscript || interimTranscript) && (
+        {(isRecording || isPaused || finalTranscript) && (
           <div className="mt-4 p-5 bg-gray-50 rounded-lg w-full border border-gray-200 shadow-inner">
             {isRecording && (
               <div className="relative flex justify-center mb-4">
@@ -290,7 +364,6 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         )}
       </div>
 
-      {/* Right Column - Instructions */}
       <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-100">
         <div className="flex items-center gap-2 mb-5">
           <FaKeyboard className="text-blue-500" />
