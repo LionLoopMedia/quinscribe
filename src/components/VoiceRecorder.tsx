@@ -157,9 +157,9 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
       {/* Left Column - Buttons */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-center gap-8">
-          <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
+        <div className="flex items-center justify-center gap-4 md:gap-6">
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={() => {
                 if (!isRecording && !isPaused) {
@@ -171,96 +171,119 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
                 }
               }}
               disabled={isDisabled}
-              className={`p-4 rounded-full transition-all ${
+              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
                 isDisabled
                   ? 'bg-gray-300 cursor-not-allowed'
                   : isPaused
-                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                  ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600'
                   : isRecording
-                  ? 'bg-red-500 hover:bg-red-600'
-                  : 'bg-blue-500 hover:bg-blue-600'
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
               }`}
             >
               {isPaused ? (
-                <FaMicrophone className="w-6 h-6 text-white" />
+                <FaMicrophone className="w-5 h-5 text-white" />
               ) : isRecording ? (
-                <FaPause className="w-6 h-6 text-white" />
+                <FaPause className="w-5 h-5 text-white" />
               ) : (
-                <FaMicrophone className="w-6 h-6 text-white" />
+                <FaMicrophone className="w-5 h-5 text-white" />
               )}
             </button>
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-xs font-medium text-gray-700 mt-1">
               {isPaused ? 'Resume' : isRecording ? 'Pause' : 'Record'}
             </span>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={handleAddLink}
               disabled={isDisabled}
-              className={`p-4 rounded-full transition-all ${
+              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
                 isDisabled
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-purple-500 hover:bg-purple-600'
+                  : 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700'
               }`}
             >
-              <FaLink className="w-6 h-6 text-white" />
+              <FaLink className="w-5 h-5 text-white" />
             </button>
-            <span className="text-sm font-medium text-gray-700">Add Link</span>
+            <span className="text-xs font-medium text-gray-700 mt-1">Add Link</span>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={handleAddMarkdown}
               disabled={isDisabled}
-              className={`p-4 rounded-full transition-all ${
+              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
                 isDisabled
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-indigo-500 hover:bg-indigo-600'
+                  : 'bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700'
               }`}
             >
-              <FaMarkdown className="w-6 h-6 text-white" />
+              <FaMarkdown className="w-5 h-5 text-white" />
             </button>
-            <span className="text-sm font-medium text-gray-700">Add Markdown</span>
+            <span className="text-xs font-medium text-gray-700 mt-1">Add Markdown</span>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
             <button
               onClick={stopAndSubmit}
               disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
-              className={`p-4 rounded-full transition-all ${
+              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
                 isDisabled || (!isRecording && !isPaused && !finalTranscript)
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-green-500 hover:bg-green-600'
+                  : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700'
               }`}
             >
-              <FaPaperPlane className="w-6 h-6 text-white" />
+              <FaPaperPlane className="w-5 h-5 text-white" />
             </button>
-            <span className="text-sm font-medium text-gray-700">Submit</span>
+            <span className="text-xs font-medium text-gray-700 mt-1">Submit</span>
           </div>
         </div>
 
         {(isRecording || isPaused) && (finalTranscript || interimTranscript) && (
-          <div className="mt-4 p-4 bg-gray-100 rounded-lg w-full">
+          <div className="mt-4 p-5 bg-gray-50 rounded-lg w-full border border-gray-200 shadow-inner">
             {isRecording && (
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="w-8 h-8 bg-blue-500 rounded-full mx-auto mb-4"
-              />
+              <div className="relative flex justify-center mb-4">
+                <div className="absolute flex space-x-2 opacity-75">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                    className="h-3 w-3 rounded-full bg-blue-400"
+                  />
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                    className="h-3 w-3 rounded-full bg-blue-400"
+                  />
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
+                    className="h-3 w-3 rounded-full bg-blue-400"
+                  />
+                </div>
+              </div>
             )}
             <div className="text-sm text-gray-600">
               {finalTranscript && (
-                <p className="font-medium mb-2 whitespace-pre-wrap">{finalTranscript}</p>
+                <p className="font-medium mb-3 whitespace-pre-wrap">{finalTranscript}</p>
               )}
               {interimTranscript && (
-                <p className="text-gray-400">{interimTranscript}</p>
+                <motion.p 
+                  animate={{ opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="text-gray-500 italic"
+                >
+                  {interimTranscript}
+                </motion.p>
               )}
             </div>
           </div>
@@ -268,32 +291,38 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       </div>
 
       {/* Right Column - Instructions */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-2 mb-4">
-          <FaKeyboard className="text-gray-600" />
-          <h3 className="text-sm font-medium text-gray-800">Keyboard Shortcuts</h3>
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-100">
+        <div className="flex items-center gap-2 mb-5">
+          <FaKeyboard className="text-blue-500" />
+          <h3 className="text-lg font-semibold text-gray-800">Keyboard Shortcuts</h3>
         </div>
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+          <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-blue-50 p-3 rounded-lg border border-gray-100">
             <span className="font-medium text-gray-700">Start/Pause Recording</span>
-            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + P</kbd>
+            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + P</kbd>
           </div>
-          <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+          <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-purple-50 p-3 rounded-lg border border-gray-100">
             <span className="font-medium text-gray-700">Insert Link from Clipboard</span>
-            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + O</kbd>
+            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + O</kbd>
           </div>
-          <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+          <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-indigo-50 p-3 rounded-lg border border-gray-100">
             <span className="font-medium text-gray-700">Insert Markdown from Clipboard</span>
-            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + I</kbd>
+            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + I</kbd>
           </div>
-          <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+          <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-green-50 p-3 rounded-lg border border-gray-100">
             <span className="font-medium text-gray-700">Submit Recording</span>
-            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded shadow-sm text-xs font-mono text-gray-800">Alt + S</kbd>
+            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + S</kbd>
           </div>
         </div>
         {isDisabled && (
-          <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-200">
-            Enter API key to enable recording
+          <div className="mt-5 text-sm text-gray-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-2 text-amber-700 font-medium mb-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+              </svg>
+              API Key Required
+            </div>
+            <p>Enter your Gemini API key above to enable recording and transcription</p>
           </div>
         )}
       </div>
