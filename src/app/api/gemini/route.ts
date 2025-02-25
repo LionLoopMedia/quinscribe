@@ -45,10 +45,10 @@ Formatting Rules:
    - Indent substeps with two spaces under their parent step
    - Example structure:
      ## Main Section Heading
-     - Step 1: Description of the first major step
+     - Description of the first major step
        - Substep 1.1: First substep under Step 1
        - Substep 1.2: Second substep under Step 1
-     - Step 2: Description of the second major step
+     - Description of the second major step
    - NEVER skip the hyphens for any step or substep
    - ALWAYS indent code blocks and markdown content with 4 spaces under their respective steps
    - When including code examples or markdown content:
