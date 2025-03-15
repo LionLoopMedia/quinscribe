@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import VoiceRecorder from '@/components/VoiceRecorder';
-import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle } from 'react-icons/fa';
+import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle, FaMicrophone, FaKeyboard } from 'react-icons/fa';
 
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -13,6 +13,8 @@ export default function Home() {
   const [isValidating, setIsValidating] = useState(false);
   const [apiKeyError, setApiKeyError] = useState('');
   const [isApiSectionOpen, setIsApiSectionOpen] = useState(false);
+  const [isVoiceMode, setIsVoiceMode] = useState(true);
+  const [manualText, setManualText] = useState('');
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -173,6 +175,19 @@ export default function Home() {
     }
   };
 
+  const handleManualSubmit = async () => {
+    if (!manualText.trim()) return;
+    await handleTranscriptionComplete(manualText);
+    setManualText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      handleManualSubmit();
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -286,10 +301,63 @@ export default function Home() {
         </div>
 
         <div className="mb-8">
-          <VoiceRecorder 
-            onTranscriptionComplete={handleTranscriptionComplete}
-            isDisabled={!isApiKeyValid}
-          />
+          <div className="flex justify-center mb-4">
+            <div className="bg-white rounded-full p-1 shadow-md">
+              <button
+                onClick={() => setIsVoiceMode(true)}
+                className={`px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ${
+                  isVoiceMode
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <FaMicrophone className="w-4 h-4" />
+                <span>Voice</span>
+              </button>
+              <button
+                onClick={() => setIsVoiceMode(false)}
+                className={`px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ${
+                  !isVoiceMode
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <FaKeyboard className="w-4 h-4" />
+                <span>Text</span>
+              </button>
+            </div>
+          </div>
+
+          {isVoiceMode ? (
+            <VoiceRecorder 
+              onTranscriptionComplete={handleTranscriptionComplete}
+              isDisabled={!isApiKeyValid}
+            />
+          ) : (
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-100">
+              <textarea
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your notes here... Press Alt+S to submit"
+                className="w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none"
+                disabled={!isApiKeyValid}
+              />
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleManualSubmit}
+                  disabled={!isApiKeyValid || !manualText.trim()}
+                  className={`px-6 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
+                    !isApiKeyValid || !manualText.trim()
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl shadow-xl p-6 border border-blue-100">
