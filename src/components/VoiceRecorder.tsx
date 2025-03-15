@@ -7,9 +7,14 @@ import { motion } from 'framer-motion';
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
   isDisabled?: boolean;
+  isVoiceMode: boolean;
+  setIsVoiceMode: (value: boolean) => void;
+  manualText: string;
+  setManualText: (value: string) => void;
+  onManualSubmit: () => void;
 }
 
-export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = false }: VoiceRecorderProps) {
+export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = false, isVoiceMode, setIsVoiceMode, manualText, setManualText, onManualSubmit }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
@@ -245,134 +250,158 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
       <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
-        <div className="flex items-center justify-center gap-4 md:gap-6">
-          <div className="flex flex-col items-center gap-1">
-            <button
-              onClick={() => {
-                if (!isRecording && !isPaused) {
-                  startRecording();
-                } else if (isRecording) {
-                  pauseRecording();
-                } else if (isPaused) {
-                  resumeRecording();
-                }
-              }}
-              disabled={isDisabled}
-              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
-                isDisabled
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : isPaused
-                  ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600'
-                  : isRecording
-                  ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-              }`}
-            >
-              {isPaused ? (
-                <FaMicrophone className="w-5 h-5 text-white" />
-              ) : isRecording ? (
-                <FaPause className="w-5 h-5 text-white" />
-              ) : (
-                <FaMicrophone className="w-5 h-5 text-white" />
-              )}
-            </button>
-            <span className="text-xs font-medium text-gray-700 mt-1">
-              {isPaused ? 'Resume' : isRecording ? 'Pause' : 'Record'}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <button
-              onClick={handleAddLink}
-              disabled={isDisabled}
-              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
-                isDisabled
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700'
-              }`}
-            >
-              <FaLink className="w-5 h-5 text-white" />
-            </button>
-            <span className="text-xs font-medium text-gray-700 mt-1">Add Link</span>
-          </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <button
-              onClick={handleAddMarkdown}
-              disabled={isDisabled}
-              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
-                isDisabled
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700'
-              }`}
-            >
-              <FaMarkdown className="w-5 h-5 text-white" />
-            </button>
-            <span className="text-xs font-medium text-gray-700 mt-1">Add Markdown</span>
-          </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <button
-              onClick={stopAndSubmit}
-              disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
-              className={`p-4 w-14 h-14 flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg ${
-                isDisabled || (!isRecording && !isPaused && !finalTranscript)
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700'
-              }`}
-            >
-              <FaPaperPlane className="w-5 h-5 text-white" />
-            </button>
-            <span className="text-xs font-medium text-gray-700 mt-1">Submit</span>
-          </div>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setIsVoiceMode(true)}
+            className={`p-3 rounded-full transition-all duration-300 ${
+              isVoiceMode
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Voice Mode"
+          >
+            <FaMicrophone className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsVoiceMode(false)}
+            className={`p-3 rounded-full transition-all duration-300 ${
+              !isVoiceMode
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Text Mode"
+          >
+            <FaKeyboard className="w-4 h-4" />
+          </button>
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+          {isVoiceMode ? (
+            <>
+              <button
+                onClick={isRecording ? pauseRecording : startRecording}
+                disabled={isDisabled}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : isRecording
+                    ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title={isRecording ? 'Pause Recording (Alt+P)' : 'Start Recording (Alt+P)'}
+              >
+                {isRecording ? <FaPause className="w-4 h-4" /> : <FaMicrophone className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={handleAddLink}
+                disabled={isDisabled}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Add Link from Clipboard (Alt+O)"
+              >
+                <FaLink className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleAddMarkdown}
+                disabled={isDisabled}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Add Markdown from Clipboard (Alt+I)"
+              >
+                <FaMarkdown className="w-4 h-4" />
+              </button>
+              <button
+                onClick={stopAndSubmit}
+                disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled || (!isRecording && !isPaused && !finalTranscript)
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
+                }`}
+                title="Submit Recording (Alt+S)"
+              >
+                <FaPaperPlane className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleAddLink}
+                disabled={isDisabled}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Add Link from Clipboard (Alt+O)"
+              >
+                <FaLink className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleAddMarkdown}
+                disabled={isDisabled}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Add Markdown from Clipboard (Alt+I)"
+              >
+                <FaMarkdown className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onManualSubmit}
+                disabled={isDisabled || !manualText.trim()}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isDisabled || !manualText.trim()
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
+                }`}
+                title="Submit Text (Alt+S)"
+              >
+                <FaPaperPlane className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
 
-        {(isRecording || isPaused || finalTranscript) && (
-          <div className="mt-4 p-5 bg-gray-50 rounded-lg w-full border border-gray-200 shadow-inner">
-            {isRecording && (
-              <div className="relative flex justify-center mb-4">
-                <div className="absolute flex space-x-2 opacity-75">
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
-                    className="h-3 w-3 rounded-full bg-blue-400"
-                  />
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-                    className="h-3 w-3 rounded-full bg-blue-400"
-                  />
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
-                    className="h-3 w-3 rounded-full bg-blue-400"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="text-sm text-gray-600">
-              {finalTranscript && (
-                <p className="font-medium mb-3 whitespace-pre-wrap">{finalTranscript}</p>
-              )}
-              {interimTranscript && (
-                <motion.p 
-                  animate={{ opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="text-gray-500 italic"
-                >
-                  {interimTranscript}
-                </motion.p>
+        {isVoiceMode ? (
+          <div className="w-full">
+            <div className="relative w-full">
+              <textarea
+                value={finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')}
+                readOnly
+                placeholder="Your recording transcript will appear here..."
+                className="w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none"
+              />
+              {isRecording && (
+                <motion.div
+                  className="absolute bottom-4 right-4 w-3 h-3 rounded-full bg-red-500"
+                  animate={{ opacity: [1, 0.5] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
               )}
             </div>
+          </div>
+        ) : (
+          <div className="w-full">
+            <textarea
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.altKey && e.key.toLowerCase() === 's') {
+                  e.preventDefault();
+                  onManualSubmit();
+                }
+              }}
+              placeholder="Type your notes here... Press Alt+S to submit"
+              className="w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none"
+              disabled={isDisabled}
+            />
           </div>
         )}
       </div>
