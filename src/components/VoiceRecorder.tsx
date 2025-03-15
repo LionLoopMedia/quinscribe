@@ -248,83 +248,97 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   }, [isRecording, isPaused, startRecording, pauseRecording, resumeRecording, handleAddLink, handleAddMarkdown, stopAndSubmit, isDisabled, finalTranscript]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-      <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setIsVoiceMode(true)}
-            className={`p-3 rounded-full transition-all duration-300 ${
-              isVoiceMode
-                ? 'bg-blue-500 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Voice Mode"
-          >
-            <FaMicrophone className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setIsVoiceMode(false)}
-            className={`p-3 rounded-full transition-all duration-300 ${
-              !isVoiceMode
-                ? 'bg-blue-500 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-            title="Text Mode"
-          >
-            <FaKeyboard className="w-4 h-4" />
-          </button>
-          <div className="w-px h-6 bg-gray-200 mx-1" />
+    <div className="grid grid-cols-12 gap-8 items-start">
+      <div className="col-span-8 flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
+        {/* Mode Toggle */}
+        <div className="flex flex-col items-center gap-2 w-full">
+          <div className="bg-gray-100 p-1.5 rounded-lg flex gap-1">
+            <button
+              onClick={() => setIsVoiceMode(true)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+                isVoiceMode
+                  ? 'bg-white text-blue-500 shadow'
+                  : 'text-gray-600 hover:bg-white/50'
+              }`}
+            >
+              <FaMicrophone className="w-4 h-4" />
+              <span className="text-xs font-medium">Voice</span>
+            </button>
+            <button
+              onClick={() => setIsVoiceMode(false)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+                !isVoiceMode
+                  ? 'bg-white text-blue-500 shadow'
+                  : 'text-gray-600 hover:bg-white/50'
+              }`}
+            >
+              <FaKeyboard className="w-4 h-4" />
+              <span className="text-xs font-medium">Text</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-center gap-4 bg-gray-50 px-6 py-4 rounded-xl w-full">
           {isVoiceMode ? (
             <>
               <button
                 onClick={isRecording ? pauseRecording : startRecording}
                 disabled={isDisabled}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : isRecording
-                    ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title={isRecording ? 'Pause Recording (Alt+P)' : 'Start Recording (Alt+P)'}
-              >
-                {isRecording ? <FaPause className="w-4 h-4" /> : <FaMicrophone className="w-4 h-4" />}
+                    ? 'bg-red-500 text-white shadow hover:bg-red-600'
+                    : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                }`}>
+                  {isRecording ? <FaPause className="w-4 h-4" /> : <FaMicrophone className="w-4 h-4" />}
+                </div>
+                <span className="text-xs font-medium text-gray-600">{isRecording ? 'Pause' : 'Record'}</span>
               </button>
               <button
                 onClick={handleAddLink}
                 disabled={isDisabled}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title="Add Link from Clipboard (Alt+O)"
-              >
-                <FaLink className="w-4 h-4" />
+                    : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                }`}>
+                  <FaLink className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Add Link</span>
               </button>
               <button
                 onClick={handleAddMarkdown}
                 disabled={isDisabled}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title="Add Markdown from Clipboard (Alt+I)"
-              >
-                <FaMarkdown className="w-4 h-4" />
+                    : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                }`}>
+                  <FaMarkdown className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Add MD</span>
               </button>
               <button
                 onClick={stopAndSubmit}
                 disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled || (!isRecording && !isPaused && !finalTranscript)
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
-                }`}
-                title="Submit Recording (Alt+S)"
-              >
-                <FaPaperPlane className="w-4 h-4" />
+                    : 'bg-blue-500 text-white shadow hover:bg-blue-600'
+                }`}>
+                  <FaPaperPlane className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Submit</span>
               </button>
             </>
           ) : (
@@ -332,38 +346,44 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
               <button
                 onClick={handleAddLink}
                 disabled={isDisabled}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title="Add Link from Clipboard (Alt+O)"
-              >
-                <FaLink className="w-4 h-4" />
+                    : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                }`}>
+                  <FaLink className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Add Link</span>
               </button>
               <button
                 onClick={handleAddMarkdown}
                 disabled={isDisabled}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title="Add Markdown from Clipboard (Alt+I)"
-              >
-                <FaMarkdown className="w-4 h-4" />
+                    : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                }`}>
+                  <FaMarkdown className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Add MD</span>
               </button>
               <button
                 onClick={onManualSubmit}
                 disabled={isDisabled || !manualText.trim()}
-                className={`p-3 rounded-full transition-all duration-300 ${
+                className="flex flex-col items-center gap-1"
+              >
+                <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled || !manualText.trim()
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
-                }`}
-                title="Submit Text (Alt+S)"
-              >
-                <FaPaperPlane className="w-4 h-4" />
+                    : 'bg-blue-500 text-white shadow hover:bg-blue-600'
+                }`}>
+                  <FaPaperPlane className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Submit</span>
               </button>
             </>
           )}
@@ -406,27 +426,27 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
         )}
       </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-100">
+      <div className="col-span-4 bg-white rounded-xl p-6 shadow-lg border border-blue-100">
         <div className="flex items-center gap-2 mb-5">
           <FaKeyboard className="text-blue-500" />
-          <h3 className="text-lg font-semibold text-gray-800">Keyboard Shortcuts</h3>
+          <h3 className="text-lg font-semibold text-gray-800">Shortcuts</h3>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-blue-50 p-3 rounded-lg border border-gray-100">
-            <span className="font-medium text-gray-700">Start/Pause Recording</span>
-            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + P</kbd>
+            <span className="font-medium text-gray-700">Record/Pause</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt+P</kbd>
           </div>
           <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-purple-50 p-3 rounded-lg border border-gray-100">
-            <span className="font-medium text-gray-700">Insert Link from Clipboard</span>
-            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + O</kbd>
+            <span className="font-medium text-gray-700">Add Link</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt+O</kbd>
           </div>
           <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-indigo-50 p-3 rounded-lg border border-gray-100">
-            <span className="font-medium text-gray-700">Insert Markdown from Clipboard</span>
-            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + I</kbd>
+            <span className="font-medium text-gray-700">Add MD</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt+I</kbd>
           </div>
           <div className="flex items-center justify-between text-sm bg-gradient-to-r from-gray-50 to-green-50 p-3 rounded-lg border border-gray-100">
-            <span className="font-medium text-gray-700">Submit Recording</span>
-            <kbd className="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt + S</kbd>
+            <span className="font-medium text-gray-700">Submit</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-200 rounded-md shadow-sm text-xs font-mono text-gray-800">Alt+S</kbd>
           </div>
         </div>
         {isDisabled && (
