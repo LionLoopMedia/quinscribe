@@ -21,6 +21,11 @@ export default function Home() {
       setApiKey(savedApiKey);
       // Validate the saved API key
       validateApiKey(savedApiKey);
+      // Keep the API section closed by default when there's a saved key
+      setIsApiSectionOpen(false);
+    } else {
+      // Open the section if there's no saved key
+      setIsApiSectionOpen(true);
     }
   }, []);
 
@@ -111,10 +116,13 @@ export default function Home() {
 
   // Function to force open API section if there's an error or no valid key
   useEffect(() => {
-    if (apiKeyError || !isApiKeyValid) {
+    if (apiKeyError || (!isApiKeyValid && !apiKey)) {
       setIsApiSectionOpen(true);
+    } else if (isApiKeyValid) {
+      // Close the section when API key is successfully validated
+      setIsApiSectionOpen(false);
     }
-  }, [apiKeyError, isApiKeyValid]);
+  }, [apiKeyError, isApiKeyValid, apiKey]);
 
   const handleTranscriptionComplete = async (text: string) => {
     if (!apiKey) {
