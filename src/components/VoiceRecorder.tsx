@@ -250,9 +250,9 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   return (
     <div className="grid grid-cols-12 gap-8 items-start">
       <div className="col-span-8 flex flex-col items-center gap-6 bg-white p-6 rounded-xl shadow-lg border border-blue-100">
-        {/* Mode Toggle */}
-        <div className="flex flex-col items-center gap-2 w-full">
-          <div className="flex items-center justify-center w-full">
+        <div className="w-full">
+          <div className="flex items-center gap-12">
+            {/* Mode Toggle */}
             <div className="bg-gray-100 p-1.5 rounded-lg flex gap-1">
               <button
                 onClick={() => setIsVoiceMode(true)}
@@ -277,11 +277,74 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
                 <span className="text-xs font-medium">Text</span>
               </button>
             </div>
-            {!isVoiceMode && (
+
+            {/* Action Buttons - Only show in Voice mode */}
+            {isVoiceMode ? (
+              <div className="flex items-center gap-4 bg-gray-50 px-6 py-4 rounded-xl">
+                <button
+                  onClick={isRecording ? pauseRecording : startRecording}
+                  disabled={isDisabled}
+                  className="flex flex-col items-center gap-1"
+                >
+                  <div className={`p-3 rounded-lg transition-all duration-300 ${
+                    isDisabled
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : isRecording
+                      ? 'bg-red-500 text-white shadow hover:bg-red-600'
+                      : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                  }`}>
+                    {isRecording ? <FaPause className="w-4 h-4" /> : <FaMicrophone className="w-4 h-4" />}
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">{isRecording ? 'Pause' : 'Record'}</span>
+                </button>
+                <button
+                  onClick={handleAddLink}
+                  disabled={isDisabled}
+                  className="flex flex-col items-center gap-1"
+                >
+                  <div className={`p-3 rounded-lg transition-all duration-300 ${
+                    isDisabled
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                  }`}>
+                    <FaLink className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Add Link</span>
+                </button>
+                <button
+                  onClick={handleAddMarkdown}
+                  disabled={isDisabled}
+                  className="flex flex-col items-center gap-1"
+                >
+                  <div className={`p-3 rounded-lg transition-all duration-300 ${
+                    isDisabled
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 shadow hover:bg-gray-50'
+                  }`}>
+                    <FaMarkdown className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Add MD</span>
+                </button>
+                <button
+                  onClick={stopAndSubmit}
+                  disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
+                  className="flex flex-col items-center gap-1"
+                >
+                  <div className={`p-3 rounded-lg transition-all duration-300 ${
+                    isDisabled || (!isRecording && !isPaused && !finalTranscript)
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-500 text-white shadow hover:bg-blue-600'
+                  }`}>
+                    <FaPaperPlane className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Submit</span>
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={onManualSubmit}
                 disabled={isDisabled || !manualText.trim()}
-                className="flex flex-col items-center gap-1 ml-4"
+                className="flex flex-col items-center gap-1"
               >
                 <div className={`p-3 rounded-lg transition-all duration-300 ${
                   isDisabled || !manualText.trim()
@@ -295,70 +358,6 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
             )}
           </div>
         </div>
-
-        {/* Action Buttons - Only show in Voice mode */}
-        {isVoiceMode && (
-          <div className="flex items-center justify-center gap-4 bg-gray-50 px-6 py-4 rounded-xl w-full">
-            <button
-              onClick={isRecording ? pauseRecording : startRecording}
-              disabled={isDisabled}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className={`p-3 rounded-lg transition-all duration-300 ${
-                isDisabled
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : isRecording
-                  ? 'bg-red-500 text-white shadow hover:bg-red-600'
-                  : 'bg-white text-gray-600 shadow hover:bg-gray-50'
-              }`}>
-                {isRecording ? <FaPause className="w-4 h-4" /> : <FaMicrophone className="w-4 h-4" />}
-              </div>
-              <span className="text-xs font-medium text-gray-600">{isRecording ? 'Pause' : 'Record'}</span>
-            </button>
-            <button
-              onClick={handleAddLink}
-              disabled={isDisabled}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className={`p-3 rounded-lg transition-all duration-300 ${
-                isDisabled
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-gray-600 shadow hover:bg-gray-50'
-              }`}>
-                <FaLink className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-gray-600">Add Link</span>
-            </button>
-            <button
-              onClick={handleAddMarkdown}
-              disabled={isDisabled}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className={`p-3 rounded-lg transition-all duration-300 ${
-                isDisabled
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-gray-600 shadow hover:bg-gray-50'
-              }`}>
-                <FaMarkdown className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-gray-600">Add MD</span>
-            </button>
-            <button
-              onClick={stopAndSubmit}
-              disabled={isDisabled || (!isRecording && !isPaused && !finalTranscript)}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className={`p-3 rounded-lg transition-all duration-300 ${
-                isDisabled || (!isRecording && !isPaused && !finalTranscript)
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white shadow hover:bg-blue-600'
-              }`}>
-                <FaPaperPlane className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-gray-600">Submit</span>
-            </button>
-          </div>
-        )}
 
         {isVoiceMode ? (
           <div className="w-full">
