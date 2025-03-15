@@ -80,8 +80,8 @@ Formatting Rules:
      a) Include the URL as a natural inline markdown link with descriptive anchor text, OR
      b) Have the URL appended at the end as "(See: [Descriptive Name](url))"
 3. Content Guidelines:
-   - Convert all instructions into clear, actionable bullet points with hyphens (-)
-   - ALWAYS use hyphens (-) for ALL bullet points - NEVER use asterisks (*) or other markers
+   - Convert all instructions into clear, actionable numbered bullet points
+   - Use hyphens (-) for sub-bullet points - NEVER use asterisks (*)
    - Put file names, variables, and commands in \`code\` format
    - Keep instructions concise but comprehensive
    - CRITICAL: All code blocks, command examples, and markdown content MUST be indented with 4 spaces
