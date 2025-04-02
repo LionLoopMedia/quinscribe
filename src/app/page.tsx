@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import VoiceRecorder from '@/components/VoiceRecorder';
-import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle, FaMicrophone, FaKeyboard, FaExchangeAlt } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 
@@ -18,6 +18,9 @@ export default function Home() {
   const [isVoiceMode, setIsVoiceMode] = useState(true);
   const [manualText, setManualText] = useState('');
   const [outputMode, setOutputMode] = useState('sop'); // 'sop' or 'guide'
+  const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
+  const [wordToReplace, setWordToReplace] = useState('');
+  const [replacementWord, setReplacementWord] = useState('');
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -169,6 +172,18 @@ export default function Home() {
     } catch (err) {
       alert('Failed to copy text to clipboard');
     }
+  };
+
+  const handleReplaceWord = () => {
+    if (!wordToReplace.trim()) return;
+    
+    const updatedText = sopNotes.replace(new RegExp(wordToReplace, 'gi'), replacementWord);
+    setSopNotes(updatedText);
+    
+    // Reset the form
+    setWordToReplace('');
+    setReplacementWord('');
+    setIsReplaceModalOpen(false);
   };
 
   const handleManualSubmit = async () => {
@@ -379,22 +394,31 @@ export default function Home() {
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100">
             <div className="flex justify-between items-center mb-4 p-4">
               <h2 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Generated {outputMode === 'sop' ? 'SOP' : 'Guide'}</h2>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 transition-colors py-2 px-3 rounded-lg text-gray-700"
-              >
-                {isCopied ? (
-                  <>
-                    <FaCheck className="w-4 h-4 text-green-500" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <FaCopy className="w-4 h-4" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsReplaceModalOpen(true)}
+                  className="flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 transition-colors py-2 px-3 rounded-lg text-gray-700"
+                >
+                  <FaExchangeAlt className="w-4 h-4" />
+                  <span>Replace Word</span>
+                </button>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 transition-colors py-2 px-3 rounded-lg text-gray-700"
+                >
+                  {isCopied ? (
+                    <>
+                      <FaCheck className="w-4 h-4 text-green-500" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaCopy className="w-4 h-4" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center">
@@ -429,6 +453,80 @@ export default function Home() {
                   ? `Use the voice recorder above to dictate your process, and Gemini AI will format it into a professional ${outputMode === 'sop' ? 'SOP' : 'Guide'}`
                   : `Type your content in the text area above, and Gemini AI will format it into a professional ${outputMode === 'sop' ? 'SOP' : 'Guide'}`}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Word Replacement Modal */}
+        {isReplaceModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl border border-blue-100 p-6 max-w-md w-full">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="bg-blue-50 p-2 rounded-full">
+                  <FaExchangeAlt className="w-5 h-5 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800">Replace Word</h3>
+              </div>
+              
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="word-to-replace" className="block text-sm font-medium text-gray-700 mb-2">
+                    Word to replace
+                  </label>
+                  <input
+                    id="word-to-replace"
+                    type="text"
+                    value={wordToReplace}
+                    onChange={(e) => setWordToReplace(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50"
+                    placeholder="Find this word"
+                    autoFocus
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="replacement-word" className="block text-sm font-medium text-gray-700 mb-2">
+                    Replacement word
+                  </label>
+                  <input
+                    id="replacement-word"
+                    type="text"
+                    value={replacementWord}
+                    onChange={(e) => setReplacementWord(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50"
+                    placeholder="Replace with this word"
+                  />
+                </div>
+                
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex justify-end gap-3 mt-3">
+                    <button
+                      onClick={() => setIsReplaceModalOpen(false)}
+                      className="px-5 py-2.5 rounded-lg transition-all duration-200 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleReplaceWord}
+                      disabled={!wordToReplace.trim() || !replacementWord.trim()}
+                      className={`px-5 py-2.5 rounded-lg transition-all duration-200 font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                        !wordToReplace.trim() || !replacementWord.trim()
+                          ? 'bg-blue-300 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg'
+                      }`}
+                    >
+                      Replace
+                    </button>
+                  </div>
+                </div>
+                
+                {wordToReplace && replacementWord && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                    <p>Will replace: <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-200">{wordToReplace}</span></p>
+                    <p className="mt-1">With: <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-200">{replacementWord}</span></p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
