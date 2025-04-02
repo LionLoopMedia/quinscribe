@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { FaSpinner, FaKey, FaCopy, FaCheck, FaExclamationCircle, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,6 +17,7 @@ export default function Home() {
   const [isApiSectionOpen, setIsApiSectionOpen] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(true);
   const [manualText, setManualText] = useState('');
+  const [outputMode, setOutputMode] = useState('sop'); // 'sop' or 'guide'
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -133,7 +136,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           'X-API-Key': apiKey,
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, mode: outputMode }),
       });
 
       const data = await response.json();
@@ -184,7 +187,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Voice to SOP Notes</h1>
+        <h1 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Voice to {outputMode === 'sop' ? 'SOP' : 'Guide'}</h1>
         
         {/* API Key Accordion */}
         <div className="mb-8 bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100">
@@ -293,97 +296,142 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mb-8">
-          {isVoiceMode ? (
-            <VoiceRecorder 
-              onTranscriptionComplete={handleTranscriptionComplete}
-              isDisabled={!isApiKeyValid}
-              isVoiceMode={isVoiceMode}
-              setIsVoiceMode={setIsVoiceMode}
-              manualText={manualText}
-              setManualText={setManualText}
-              onManualSubmit={handleManualSubmit}
-            />
-          ) : (
-            <VoiceRecorder 
-              onTranscriptionComplete={handleTranscriptionComplete}
-              isDisabled={!isApiKeyValid}
-              isVoiceMode={isVoiceMode}
-              setIsVoiceMode={setIsVoiceMode}
-              manualText={manualText}
-              setManualText={setManualText}
-              onManualSubmit={handleManualSubmit}
-            />
-          )}
+        {/* Mode Selector */}
+        <div className="mb-8 bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100 p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+            </svg>
+            <h2 className="text-xl font-semibold text-gray-800">Output Mode</h2>
+          </div>
+          
+          <div className="flex gap-4 mt-2">
+            <button
+              onClick={() => setOutputMode('sop')}
+              className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                outputMode === 'sop'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              SOP Mode
+            </button>
+            <button
+              onClick={() => setOutputMode('guide')}
+              className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                outputMode === 'guide'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+              </svg>
+              Guide Mode
+            </button>
+          </div>
+          
+          <div className="mt-2 text-sm text-gray-500">
+            {outputMode === 'sop' ? (
+              <p>SOP Mode creates step-by-step procedures with clear, actionable instructions.</p>
+            ) : (
+              <p>Guide Mode generates educational content with explanations, examples, and best practices.</p>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-xl p-6 border border-blue-100">
-          {isProcessing ? (
-            <div className="flex flex-col items-center justify-center py-12">
+        {/* Voice Recorder Section */}
+        <div className="mb-8 bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100">
+          <div className="p-6">
+            <VoiceRecorder 
+              onTranscriptionComplete={handleTranscriptionComplete}
+              isDisabled={!isApiKeyValid}
+              isVoiceMode={isVoiceMode}
+              setIsVoiceMode={setIsVoiceMode}
+              manualText={manualText}
+              setManualText={setManualText}
+              onManualSubmit={handleManualSubmit}
+            />
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {isProcessing && (
+          <div className="mb-8 bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100 p-8">
+            <div className="flex flex-col items-center justify-center">
               <div className="relative">
                 <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-8 h-8 bg-white rounded-full"></div>
                 </div>
               </div>
-              <span className="mt-4 text-gray-600 font-medium">Processing your recording...</span>
+              <span className="mt-4 text-gray-600 font-medium">Creating your {outputMode === 'sop' ? 'SOP' : 'Guide'}...</span>
+              <p className="text-sm text-gray-500 mt-2">This may take up to 30 seconds</p>
             </div>
-          ) : sopNotes ? (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Generated SOP</h2>
-                <button
-                  onClick={handleCopy}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                    isCopied
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-md'
-                  }`}
-                  title="Copy to clipboard"
-                >
-                  {isCopied ? (
-                    <>
-                      <FaCheck className="w-4 h-4" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCopy className="w-4 h-4" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  </div>
-                  <span className="ml-3 text-xs text-gray-500 font-medium">SOP Markdown</span>
+          </div>
+        )}
+
+        {/* Output Section */}
+        {sopNotes && !isProcessing && (
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100">
+            <div className="flex justify-between items-center mb-4 p-4">
+              <h2 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Generated {outputMode === 'sop' ? 'SOP' : 'Guide'}</h2>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 transition-colors py-2 px-3 rounded-lg text-gray-700"
+              >
+                {isCopied ? (
+                  <>
+                    <FaCheck className="w-4 h-4 text-green-500" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <FaCopy className="w-4 h-4" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
                 </div>
-                <pre className="whitespace-pre-wrap text-black font-mono text-sm p-5 bg-gray-50 max-h-[600px] overflow-y-auto">
-                  {sopNotes}
-                </pre>
+                <span className="ml-3 text-xs text-gray-500 font-medium">{outputMode === 'sop' ? 'SOP' : 'Guide'} Markdown</span>
               </div>
+              <pre className="whitespace-pre-wrap text-black font-mono text-sm p-5 bg-white max-h-[600px] overflow-y-auto">
+                {sopNotes}
+              </pre>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+          </div>
+        )}
+        
+        {/* Empty State when no SOP/Guide is generated yet */}
+        {!sopNotes && !isProcessing && (
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-blue-100 p-8">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-24 h-24 mb-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                 </svg>
               </div>
               <p className="text-gray-500 font-medium">
-                Your SOP notes will appear here after recording
+                Your {outputMode === 'sop' ? 'SOP' : 'Guide'} will appear here
               </p>
               <p className="text-gray-400 text-sm mt-2 max-w-md">
-                Use the voice recorder above to dictate your process, and Gemini AI will format it into a professional SOP
+                {isVoiceMode 
+                  ? `Use the voice recorder above to dictate your process, and Gemini AI will format it into a professional ${outputMode === 'sop' ? 'SOP' : 'Guide'}`
+                  : `Type your content in the text area above, and Gemini AI will format it into a professional ${outputMode === 'sop' ? 'SOP' : 'Guide'}`}
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );
