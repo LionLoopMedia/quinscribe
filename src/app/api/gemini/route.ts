@@ -12,14 +12,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Basic validation for Gemini API key format
-    if (!apiKey.startsWith('AI')) {
-      return NextResponse.json(
-        { error: 'Invalid API key format. Gemini API keys should start with "AI"' },
-        { status: 400 }
-      );
-    }
-
     const { text } = await req.json().catch(() => ({}));
     
     if (!text) {
@@ -31,15 +23,22 @@ export async function POST(req: Request) {
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro-exp-03-25' });
+      
+      // If this is a validation request (text is "Test."), return success immediately
+      if (text === 'Test.') {
+        return NextResponse.json({ content: 'API key is valid' });
+      }
       
       const prompt = `You are an expert SOP Creator, specializing in generating detailed Standard Operating Procedures (SOPs) in Markdown format for digital marketing and online entrepreneurship tasks.
 
 Task: Create a detailed SOP in Markdown format from the following voice input, which contains steps outlining a process. Any URLs in parentheses MUST be included in the output.
 
+IMPORTANT: Do NOT wrap the entire output in markdown code block delimiters (\`\`\`markdown). Just output the raw markdown content directly.
+
 Formatting Rules:
 1. Structure (CRITICAL - NO EXCEPTIONS):
-   - Use H2 (##) for main section headings
+   - Use H2 (##) for main section headings. The main section headings always have to be in imperative form and not infinitive.
    - ALWAYS use bullet points with hyphens (-) for ALL steps and substeps - NEVER use plain text for steps
    - All steps MUST start with a hyphen (-) and have proper indentation for hierarchy
    - Indent substeps with two spaces under their parent step

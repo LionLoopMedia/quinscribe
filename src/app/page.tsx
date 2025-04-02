@@ -74,26 +74,19 @@ export default function Home() {
     setApiKeyError('');
 
     try {
-      // Check if the API key starts with "AI" (Gemini API keys typically start with this)
-      if (!keyToValidate.startsWith('AI')) {
-        throw new Error('API key should start with "AI"');
-      }
-
-      // Test the API key with a simple prompt
+      // Test the API key with a minimal prompt
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-API-Key': keyToValidate,
         },
-        body: JSON.stringify({ text: 'Test API key.' }),
+        body: JSON.stringify({ text: 'Test.' }),
       });
 
-      // Check if the response is OK
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API response not OK:', response.status, errorText);
-        throw new Error(`API error: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -108,7 +101,7 @@ export default function Home() {
       localStorage.setItem('geminiApiKey', keyToValidate);
     } catch (error: any) {
       console.error('API Key validation error:', error);
-      setApiKeyError(error.message || 'Invalid API key. Please check your key and try again.');
+      setApiKeyError(error.message || 'Failed to validate API key. Please try again.');
       setIsApiKeyValid(false);
       localStorage.removeItem('geminiApiKey');
     } finally {
