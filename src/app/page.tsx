@@ -37,22 +37,6 @@ export default function Home() {
     }
   }, []);
 
-  // Clear API key when component unmounts or page is about to unload
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Don't clear from localStorage on page unload anymore
-      setApiKey('');
-      setIsApiKeyValid(false);
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      handleBeforeUnload();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
   // Prevent browser's password manager from saving the API key
   useEffect(() => {
     const input = document.querySelector('input[type="password"]');
