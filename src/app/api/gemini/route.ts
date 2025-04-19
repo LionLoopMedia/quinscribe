@@ -23,11 +23,22 @@ export async function POST(req: Request) {
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro-exp-03-25' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-04-17' });
       
       // If this is a validation request (text is "Test."), return success immediately
       if (text === 'Test.') {
-        return NextResponse.json({ content: 'API key is valid' });
+        try {
+          // Actually test the API key with a minimal generation
+          const result = await model.generateContent('Test.');
+          const response = await result.response;
+          return NextResponse.json({ content: 'API key is valid' });
+        } catch (error: any) {
+          console.error('API Key validation error:', error);
+          return NextResponse.json(
+            { error: 'Invalid API key or API access error. Please check your Gemini API key and ensure you have access to the preview model.' },
+            { status: 401 }
+          );
+        }
       }
 
       let prompt;
