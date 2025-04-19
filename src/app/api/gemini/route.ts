@@ -2,41 +2,74 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
+  // Add CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-API-Key'
+  };
+  
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, { 
+      status: 204, 
+      headers: corsHeaders
+    });
+  }
+
   try {
     const apiKey = req.headers.get('x-api-key');
     
     if (!apiKey) {
       return NextResponse.json(
         { error: 'API key is required' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       );
     }
 
-    const { text, mode = 'sop' } = await req.json().catch(() => ({}));
+    const { text, mode = 'sop' } = await req.json().catch((err) => {
+      console.error('Failed to parse request body:', err);
+      return {};
+    });
     
     if (!text) {
       return NextResponse.json(
         { error: 'Text input is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
 
     try {
+      console.log('Using model: gemini-2.5-flash-preview-04-17');
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-04-17' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
       
       // If this is a validation request (text is "Test."), return success immediately
       if (text === 'Test.') {
         try {
           // Actually test the API key with a minimal generation
+          console.log('Testing API key with minimal generation');
           const result = await model.generateContent('Test.');
           const response = await result.response;
-          return NextResponse.json({ content: 'API key is valid' });
-        } catch (error: any) {
-          console.error('API Key validation error:', error);
+          console.log('API key validation successful');
           return NextResponse.json(
-            { error: 'Invalid API key or API access error. Please check your Gemini API key and ensure you have access to the preview model.' },
-            { status: 401 }
+            { content: 'API key is valid' },
+            { headers: corsHeaders }
+          );
+        } catch (error: any) {
+          console.error('API Key validation error detailed:', error);
+          return NextResponse.json(
+            { error: 'Invalid API key or API access error. Please check your Gemini API key and ensure you have access to Gemini Pro models.' },
+            { 
+              status: 401,
+              headers: corsHeaders
+            }
           );
         }
       }
@@ -211,30 +244,39 @@ Remember:
       const response = await result.response;
       const formattedResponse = response.text();
 
-      return NextResponse.json({ content: formattedResponse });
+      return NextResponse.json({ content: formattedResponse }, { headers: corsHeaders });
     } catch (error: any) {
-      console.error('Error with Gemini API:', error);
+      console.error('Error with Gemini API (detailed):', error);
       
       // Check for specific Gemini API errors
       const errorMessage = error.message || 'Failed to process with Gemini API';
       
       if (errorMessage.includes('API key not valid')) {
         return NextResponse.json(
-          { error: 'Invalid API key. Please check your Gemini API key.' },
-          { status: 401 }
+          { error: 'Invalid API key. Please check your Gemini API key and ensure you have access to Gemini Pro models.' },
+          { 
+            status: 401,
+            headers: corsHeaders
+          }
         );
       }
       
       return NextResponse.json(
         { error: errorMessage },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       );
     }
   } catch (error: any) {
-    console.error('Error processing request:', error);
+    console.error('Error processing request (detailed):', error);
     return NextResponse.json(
       { error: error.message || 'Failed to process the request' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   }
 } 
