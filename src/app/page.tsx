@@ -115,28 +115,131 @@ export default function Home() {
       return;
     }
 
+    // Add validation for text size (Gemini has limitations with large inputs)
+    const textSizeInBytes = new Blob([text]).size;
+    const maxSizeInBytes = 250000; // ~250KB limit
+    
+    if (textSizeInBytes > maxSizeInBytes) {
+      setApiKeyError(`Text is too large (${Math.round(textSizeInBytes/1024)}KB). Please reduce to under ${Math.round(maxSizeInBytes/1024)}KB.`);
+      setIsApiKeyValid(true); // Keep API key valid
+      return;
+    }
+
+    // Track retries
+    let retryCount = 0;
+    const maxRetries = 2;
+    
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
-        },
-        body: JSON.stringify({ text, mode: outputMode }),
-      });
-
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      
+      // Retry loop for handling transient errors
+      while (retryCount <= maxRetries) {
+        try {
+          const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': apiKey,
+            },
+            body: JSON.stringify({ text, mode: outputMode }),
+          });
+    
+          // Check if the response is ok before trying to parse JSON
+          if (!response.ok) {
+            let errorMessage = `Server responded with status ${response.status}`;
+            
+            // Try to parse error JSON, but handle cases where it's not valid JSON
+            try {
+              const errorData = await response.json();
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              }
+            } catch (jsonError) {
+              // If response is not valid JSON, try to get text
+              try {
+                const errorText = await response.text();
+                errorMessage = errorText.substring(0, 150) + (errorText.length > 150 ? '...' : '');
+              } catch (textError) {
+                // If we couldn't get text either, keep the default error message
+              }
+            }
+            
+            // If it's a Gateway Timeout (504) and we have retries left, retry
+            if (response.status === 504 && retryCount < maxRetries) {
+              console.log(`Gateway timeout, retrying (${retryCount + 1}/${maxRetries})...`);
+              retryCount++;
+              // Wait a bit before retrying
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            }
+            
+            throw new Error(errorMessage);
+          }
+    
+          // Safely parse JSON with recovery attempts
+          let responseText;
+          try {
+            responseText = await response.text();
+          } catch (textError) {
+            throw new Error('Failed to read response body');
+          }
+          
+          let data;
+          try {
+            // Try to parse the JSON response
+            data = JSON.parse(responseText);
+          } catch (jsonError) {
+            // If it fails, check if we can recover the JSON by fixing common issues
+            console.error('JSON parse error:', jsonError);
+            
+            // Check if we need to retry due to malformed response
+            if (retryCount < maxRetries) {
+              console.log(`Received malformed JSON, retrying (${retryCount + 1}/${maxRetries})...`);
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            }
+            
+            throw new Error('Failed to parse response as JSON. The server returned an invalid response.');
+          }
+    
+          if (data.error) {
+            throw new Error(data.error);
+          }
+    
+          setSopNotes(data.content);
+          setIsCopied(false);
+          
+          // If we reach this point, we succeeded, so break out of the retry loop
+          break;
+        } catch (innerError) {
+          // If this is our last retry, rethrow the error for the outer catch
+          if (retryCount >= maxRetries) {
+            throw innerError;
+          }
+          // Otherwise, increment retry count and continue
+          retryCount++;
+          console.log(`Error occurred, retrying (${retryCount}/${maxRetries})...`, innerError);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-
-      setSopNotes(data.content);
-      setIsCopied(false);
     } catch (error) {
       console.error('Error processing text:', error);
-      setApiKeyError('Failed to process the text. Please check your API key and try again.');
-      setIsApiKeyValid(false);
+      // Check for specific error types
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('payload') && errorMessage.includes('size')) {
+        setApiKeyError('Text is too large. Please reduce the amount of text and try again.');
+      } else if (errorMessage.includes('Gateway Timeout') || errorMessage.includes('504')) {
+        setApiKeyError('Server timeout. Your request took too long to process. Please try with a smaller text input.');
+      } else if (errorMessage.includes('parse') || errorMessage.includes('JSON') || errorMessage.includes('Unexpected token')) {
+        setApiKeyError('Received an invalid response from the server. This may be due to network issues or server-side errors.');
+      } else {
+        setApiKeyError('Failed to process the text: ' + errorMessage);
+        // Only invalidate API key for authorization errors
+        if (errorMessage.includes('API key') || errorMessage.includes('auth') || errorMessage.includes('401')) {
+          setIsApiKeyValid(false);
+        }
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -172,6 +275,16 @@ export default function Home() {
 
   const handleManualSubmit = async () => {
     if (!manualText.trim()) return;
+    
+    // Check input text size before submission
+    const textSizeInBytes = new Blob([manualText]).size;
+    const maxSizeInBytes = 250000; // ~250KB limit
+    
+    if (textSizeInBytes > maxSizeInBytes) {
+      setApiKeyError(`Text is too large (${Math.round(textSizeInBytes/1024)}KB). Please reduce to under ${Math.round(maxSizeInBytes/1024)}KB.`);
+      return;
+    }
+    
     await handleTranscriptionComplete(manualText);
     setManualText('');
   };

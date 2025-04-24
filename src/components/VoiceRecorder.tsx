@@ -22,6 +22,27 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
   const [finalTranscript, setFinalTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const resultsRef = useRef<Array<SpeechRecognitionResult>>([]);
+  
+  // Add constant for text size limit
+  const MAX_TEXT_SIZE_BYTES = 250000; // ~250KB limit
+
+  // Calculate text size for both voice and manual input
+  const getTextSizeInfo = (text: string) => {
+    const textSize = new Blob([text]).size;
+    const percentUsed = Math.round((textSize / MAX_TEXT_SIZE_BYTES) * 100);
+    return {
+      sizeBytes: textSize,
+      sizeKB: Math.round(textSize / 1024),
+      percentUsed,
+      isApproachingLimit: percentUsed > 80,
+      isOverLimit: percentUsed >= 100
+    };
+  };
+
+  // Get text size info for manual text
+  const manualTextSizeInfo = getTextSizeInfo(manualText);
+  // Get text size info for voice transcript
+  const voiceTextSizeInfo = getTextSizeInfo(finalTranscript + (interimTranscript ? ' ' + interimTranscript : ''));
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !recognition) {
@@ -139,6 +160,15 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       }
       
       if (completeTranscript.trim()) {
+        // Check if text is within size limits before submitting
+        const textSizeInfo = getTextSizeInfo(completeTranscript.trim());
+        if (textSizeInfo.isOverLimit) {
+          // Display a warning in the transcript that it's too large
+          setFinalTranscript(completeTranscript.trim() + 
+            "\n\n[ERROR: Text is too large for processing. Please reduce content before submitting.]");
+          return;
+        }
+        
         onTranscriptionComplete(completeTranscript.trim());
       }
       
@@ -146,7 +176,7 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
       setInterimTranscript('');
       resultsRef.current = [];
     }
-  }, [recognition, finalTranscript, interimTranscript, onTranscriptionComplete]);
+  }, [recognition, finalTranscript, interimTranscript, onTranscriptionComplete, getTextSizeInfo]);
 
   useEffect(() => {
     return () => {
@@ -368,7 +398,10 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
                 value={finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')}
                 readOnly
                 placeholder="Your recording transcript will appear here..."
-                className="w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none"
+                className={`w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none ${
+                  voiceTextSizeInfo.isOverLimit ? 'border-red-500' : 
+                  voiceTextSizeInfo.isApproachingLimit ? 'border-yellow-500' : ''
+                }`}
               />
               {isRecording && (
                 <motion.div
@@ -377,23 +410,44 @@ export default function VoiceRecorder({ onTranscriptionComplete, isDisabled = fa
                   transition={{ duration: 1, repeat: Infinity }}
                 />
               )}
+              {/* Add size indicator */}
+              <div className={`absolute bottom-2 right-4 text-xs ${
+                voiceTextSizeInfo.isOverLimit ? 'text-red-600 font-medium' : 
+                voiceTextSizeInfo.isApproachingLimit ? 'text-yellow-600' : 'text-gray-500'
+              }`}>
+                {voiceTextSizeInfo.sizeKB}KB / {Math.round(MAX_TEXT_SIZE_BYTES/1024)}KB
+                {voiceTextSizeInfo.isOverLimit && " (too large)"}
+              </div>
             </div>
           </div>
         ) : (
           <div className="w-full">
-            <textarea
-              value={manualText}
-              onChange={(e) => setManualText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.altKey && e.key.toLowerCase() === 's') {
-                  e.preventDefault();
-                  onManualSubmit();
-                }
-              }}
-              placeholder="Type your notes here... Press Alt+S to submit"
-              className="w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none"
-              disabled={isDisabled}
-            />
+            <div className="relative w-full">
+              <textarea
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.altKey && e.key.toLowerCase() === 's') {
+                    e.preventDefault();
+                    onManualSubmit();
+                  }
+                }}
+                placeholder="Type your notes here... Press Alt+S to submit"
+                className={`w-full h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black bg-gray-50 resize-none ${
+                  manualTextSizeInfo.isOverLimit ? 'border-red-500' : 
+                  manualTextSizeInfo.isApproachingLimit ? 'border-yellow-500' : ''
+                }`}
+                disabled={isDisabled}
+              />
+              {/* Add size indicator */}
+              <div className={`absolute bottom-2 right-4 text-xs ${
+                manualTextSizeInfo.isOverLimit ? 'text-red-600 font-medium' : 
+                manualTextSizeInfo.isApproachingLimit ? 'text-yellow-600' : 'text-gray-500'
+              }`}>
+                {manualTextSizeInfo.sizeKB}KB / {Math.round(MAX_TEXT_SIZE_BYTES/1024)}KB
+                {manualTextSizeInfo.isOverLimit && " (too large)"}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,0 +1,156 @@
+warning: in the working copy of 'src/app/api/gemini/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/VoiceRecorder.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/app/api/gemini/route.ts b/src/app/api/gemini/route.ts[m
+[1mindex 4ba119e..021b5fc 100644[m
+[1m--- a/src/app/api/gemini/route.ts[m
+[1m+++ b/src/app/api/gemini/route.ts[m
+[36m@@ -45,6 +45,19 @@[m [mexport async function POST(req: Request) {[m
+       );[m
+     }[m
+ [m
+[32m+[m[32m    // Add input size validation[m
+[32m+[m[32m    const textSizeInBytes = new Blob([text]).size;[m
+[32m+[m[32m    const maxSizeInBytes = 250000; // ~250KB limit[m
+[32m+[m[32m    if (textSizeInBytes > maxSizeInBytes) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        { error: `Text input is too large (${Math.round(textSizeInBytes/1024)}KB). Please reduce to under ${Math.round(maxSizeInBytes/1024)}KB.` },[m
+[32m+[m[32m        {[m[41m [m
+[32m+[m[32m          status: 413, // Payload Too Large[m
+[32m+[m[32m          headers: corsHeaders[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+     try {[m
+       console.log('Using model: gemini-2.5-flash-preview-04-17');[m
+       const genAI = new GoogleGenerativeAI(apiKey);[m
+[36m@@ -240,11 +253,64 @@[m [mRemember:[m
+ - Always add blank lines before and after indented content`;[m
+       }[m
+ [m
+[31m-      const result = await model.generateContent(prompt);[m
+[31m-      const response = await result.response;[m
+[31m-      const formattedResponse = response.text();[m
+[31m-[m
+[31m-      return NextResponse.json({ content: formattedResponse }, { headers: corsHeaders });[m
+[32m+[m[32m      // Add timeout handling for Gemini API requests[m
+[32m+[m[32m      const timeoutDuration = 60000; // 60 seconds[m
+[32m+[m[32m      const timeoutPromise = new Promise<never>((_, reject) => {[m
+[32m+[m[32m        setTimeout(() => reject(new Error('Request timed out')), timeoutDuration);[m
+[32m+[m[32m      });[m
+[32m+[m[41m      [m
+[32m+[m[32m      try {[m
+[32m+[m[32m        // Race the API call against the timeout[m
+[32m+[m[32m        const resultPromise = model.generateContent(prompt);[m
+[32m+[m[32m        const result = await Promise.race([resultPromise, timeoutPromise]);[m
+[32m+[m[41m        [m
+[32m+[m[32m        const response = await result.response;[m
+[32m+[m[32m        const formattedResponse = response.text();[m
+[32m+[m[41m  [m
+[32m+[m[32m        // Validate the response to ensure it's clean and sanitized[m
+[32m+[m[32m        try {[m
+[32m+[m[32m          // Test that we can stringify and parse it without errors[m
+[32m+[m[32m          const testJson = JSON.stringify({ content: formattedResponse });[m
+[32m+[m[32m          JSON.parse(testJson);[m
+[32m+[m[41m          [m
+[32m+[m[32m          return NextResponse.json({ content: formattedResponse }, { headers: corsHeaders });[m
+[32m+[m[32m        } catch (jsonError) {[m
+[32m+[m[32m          console.error('Response validation failed, attempting to sanitize:', jsonError);[m
+[32m+[m[41m          [m
+[32m+[m[32m          // If there's an issue, try to sanitize the response[m
+[32m+[m[32m          const sanitizedResponse = formattedResponse[m
+[32m+[m[32m            // Replace any characters that might break JSON[m
+[32m+[m[32m            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')[m
+[32m+[m[32m            // Limit length if it's extremely long[m
+[32m+[m[32m            .substring(0, 1000000);[m
+[32m+[m[41m          [m
+[32m+[m[32m          // Verify our sanitized response[m
+[32m+[m[32m          try {[m
+[32m+[m[32m            const testJson = JSON.stringify({ content: sanitizedResponse });[m
+[32m+[m[32m            JSON.parse(testJson);[m
+[32m+[m[41m            [m
+[32m+[m[32m            return NextResponse.json({ content: sanitizedResponse }, { headers: corsHeaders });[m
+[32m+[m[32m          } catch (secondJsonError) {[m
+[32m+[m[32m            // If still failing, return error instead of broken response[m
+[32m+[m[32m            console.error('Failed to sanitize response:', secondJsonError);[m
+[32m+[m[32m            throw new Error('Generated content contains invalid characters that cannot be properly encoded');[m
+[32m+[m[32m          }[m
+[32m+[m[32m        }[m
+[32m+[m[32m      } catch (error: any) {[m
+[32m+[m[32m        // Handle specific timeout error[m
+[32m+[m[32m        if (error.message === 'Request timed out') {[m
+[32m+[m[32m          console.error('Gemini API request timed out after', timeoutDuration/1000, 'seconds');[m
+[32m+[m[32m          return NextResponse.json([m
+[32m+[m[32m            { error: 'Request timed out. Please try with a smaller input.' },[m
+[32m+[m[32m            {[m[41m [m
+[32m+[m[32m              status: 504, // Gateway Timeout[m
+[32m+[m[32m              headers: corsHeaders[m
+[32m+[m[32m            }[m
+[32m+[m[32m          );[m
+[32m+[m[32m        }[m
+[32m+[m[32m        // Re-throw for general error handling[m
+[32m+[m[32m        throw error;[m
+[32m+[m[32m      }[m
+     } catch (error: any) {[m
+       console.error('Error with Gemini API (detailed):', error);[m
+       [m
+[36m@@ -261,6 +327,28 @@[m [mRemember:[m
+         );[m
+       }[m
+       [m
+[32m+[m[32m      // Add check for payload size errors[m
+[32m+[m[32m      if (errorMessage.toLowerCase().includes('payload') && errorMessage.toLowerCase().includes('size')) {[m
+[32m+[m[32m        return NextResponse.json([m
+[32m+[m[32m          { error: 'Text input is too large. Please reduce the amount of text and try again.' },[m
+[32m+[m[32m          {[m[41m [m
+[32m+[m[32m            status: 413, // Payload Too Large[m
+[32m+[m[32m            headers: corsHeaders[m
+[32m+[m[32m          }[m
+[32m+[m[32m        );[m
+[32m+[m[32m      }[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Check for network errors[m
+[32m+[m[32m      if (errorMessage.includes('network') || errorMessage.includes('connection')) {[m
+[32m+[m[32m        return NextResponse.json([m
+[32m+[m[32m          { error: 'Network error when connecting to Gemini API. Please check your internet connection and try again.' },[m
+[32m+[m[32m          {[m[41m [m
+[32m+[m[32m            status: 503, // Service Unavailable[m
+[32m+[m[32m            headers: corsHeaders[m
+[32m+[m[32m          }[m
+[32m+[m[32m        );[m
+[32m+[m[32m      }[m
+[32m+[m[41m      [m
+       return NextResponse.json([m
+         { error: errorMessage },[m
+         { [m
+[36m@@ -271,6 +359,18 @@[m [mRemember:[m
+     }[m
+   } catch (error: any) {[m
+     console.error('Error processing request (detailed):', error);[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Check if it's a JSON parse error[m
+[32m+[m[32m    if (error instanceof SyntaxError && error.message.includes('JSON')) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        { error: 'Failed to parse request: Invalid JSON format' },[m
+[32m+[m[32m        {[m[41m [m
+[32m+[m[32m          status: 400,[m
+[32m+[m[32m          headers: corsHeaders[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+     return NextResponse.json([m
+       { error: error.message || 'Failed to process the request' },[m
+       { [m
+[1mdiff --git a/src/app/page.tsx b/src/app/page.tsx[m
+[1mindex af91c9c..3dbd35d 100644[m
+[1m--- a/src/app/page.tsx[m
+[1m+++ b/src/app/page.tsx[m
+[36m@@ -115,28 +115,131 @@[m [mexport default function Home() {[m
+       return;[m
+     }[m
+ [m
+[32m+[m[32m    // Add validation for text size (Gemini has limitations with large inputs)[m
+[32m+[m[32m    const textSizeInBytes = new Blob([text]).size;[m
+[32m+[m[32m    const maxSizeInBytes = 

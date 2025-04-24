@@ -45,6 +45,19 @@ export async function POST(req: Request) {
       );
     }
 
+    // Add input size validation
+    const textSizeInBytes = new Blob([text]).size;
+    const maxSizeInBytes = 250000; // ~250KB limit
+    if (textSizeInBytes > maxSizeInBytes) {
+      return NextResponse.json(
+        { error: `Text input is too large (${Math.round(textSizeInBytes/1024)}KB). Please reduce to under ${Math.round(maxSizeInBytes/1024)}KB.` },
+        { 
+          status: 413, // Payload Too Large
+          headers: corsHeaders
+        }
+      );
+    }
+
     try {
       console.log('Using model: gemini-2.5-flash-preview-04-17');
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -240,11 +253,64 @@ Remember:
 - Always add blank lines before and after indented content`;
       }
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const formattedResponse = response.text();
-
-      return NextResponse.json({ content: formattedResponse }, { headers: corsHeaders });
+      // Add timeout handling for Gemini API requests
+      const timeoutDuration = 60000; // 60 seconds
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), timeoutDuration);
+      });
+      
+      try {
+        // Race the API call against the timeout
+        const resultPromise = model.generateContent(prompt);
+        const result = await Promise.race([resultPromise, timeoutPromise]);
+        
+        const response = await result.response;
+        const formattedResponse = response.text();
+  
+        // Validate the response to ensure it's clean and sanitized
+        try {
+          // Test that we can stringify and parse it without errors
+          const testJson = JSON.stringify({ content: formattedResponse });
+          JSON.parse(testJson);
+          
+          return NextResponse.json({ content: formattedResponse }, { headers: corsHeaders });
+        } catch (jsonError) {
+          console.error('Response validation failed, attempting to sanitize:', jsonError);
+          
+          // If there's an issue, try to sanitize the response
+          const sanitizedResponse = formattedResponse
+            // Replace any characters that might break JSON
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+            // Limit length if it's extremely long
+            .substring(0, 1000000);
+          
+          // Verify our sanitized response
+          try {
+            const testJson = JSON.stringify({ content: sanitizedResponse });
+            JSON.parse(testJson);
+            
+            return NextResponse.json({ content: sanitizedResponse }, { headers: corsHeaders });
+          } catch (secondJsonError) {
+            // If still failing, return error instead of broken response
+            console.error('Failed to sanitize response:', secondJsonError);
+            throw new Error('Generated content contains invalid characters that cannot be properly encoded');
+          }
+        }
+      } catch (error: any) {
+        // Handle specific timeout error
+        if (error.message === 'Request timed out') {
+          console.error('Gemini API request timed out after', timeoutDuration/1000, 'seconds');
+          return NextResponse.json(
+            { error: 'Request timed out. Please try with a smaller input.' },
+            { 
+              status: 504, // Gateway Timeout
+              headers: corsHeaders
+            }
+          );
+        }
+        // Re-throw for general error handling
+        throw error;
+      }
     } catch (error: any) {
       console.error('Error with Gemini API (detailed):', error);
       
@@ -261,6 +327,28 @@ Remember:
         );
       }
       
+      // Add check for payload size errors
+      if (errorMessage.toLowerCase().includes('payload') && errorMessage.toLowerCase().includes('size')) {
+        return NextResponse.json(
+          { error: 'Text input is too large. Please reduce the amount of text and try again.' },
+          { 
+            status: 413, // Payload Too Large
+            headers: corsHeaders
+          }
+        );
+      }
+      
+      // Check for network errors
+      if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+        return NextResponse.json(
+          { error: 'Network error when connecting to Gemini API. Please check your internet connection and try again.' },
+          { 
+            status: 503, // Service Unavailable
+            headers: corsHeaders
+          }
+        );
+      }
+      
       return NextResponse.json(
         { error: errorMessage },
         { 
@@ -271,6 +359,18 @@ Remember:
     }
   } catch (error: any) {
     console.error('Error processing request (detailed):', error);
+    
+    // Check if it's a JSON parse error
+    if (error instanceof SyntaxError && error.message.includes('JSON')) {
+      return NextResponse.json(
+        { error: 'Failed to parse request: Invalid JSON format' },
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to process the request' },
       { 
